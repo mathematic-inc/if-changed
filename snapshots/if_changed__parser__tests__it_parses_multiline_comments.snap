@@ -1,0 +1,27 @@
+---
+source: parser.rs
+expression: "Parser::new(file.path()).unwrap().collect::<Result<Vec<_>, _>>()"
+---
+Ok(
+    [
+        IfChangedBlock {
+            name: None,
+            range: (
+                2,
+                5,
+            ),
+            patterns: [
+                NamedPattern {
+                    name: None,
+                    pattern: "foo.rs",
+                    line: 6,
+                },
+                NamedPattern {
+                    name: None,
+                    pattern: "bar.rs",
+                    line: 7,
+                },
+            ],
+        },
+    ],
+)

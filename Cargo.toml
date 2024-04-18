@@ -1,0 +1,27 @@
+[package]
+name = "if-changed"
+version = "0.0.0"
+edition = "2021"
+description = "A pre-submit for file changes."
+license = "MIT OR Apache-2.0"
+authors = ["Mathematic Inc"]
+repository = "https://github.com/mathematic-inc/if-changed"
+categories = ["command-line-utilities", "development-tools", "filesystem"]
+keywords = ["change", "git", "presubmit", "pre-submit"]
+
+[lib]
+path = "if-changed.rs"
+
+[[bin]]
+name = "if-changed"
+path = "bin/if-changed.rs"
+
+[dependencies]
+bstr = "1"
+clap = { version = "4", features = ["derive"] }
+git2 = "0.18"
+
+[dev-dependencies]
+tempfile = "3"
+insta = "1"
+indoc = "2"
