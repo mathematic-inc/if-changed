@@ -1,0 +1,103 @@
+---
+source: parser.rs
+expression: "Parser::new(file.path()).unwrap().collect::<Result<Vec<_>, _>>()"
+---
+Ok(
+    [
+        IfChangedBlock {
+            name: None,
+            range: (
+                2,
+                4,
+            ),
+            patterns: [
+                NamedPattern {
+                    name: None,
+                    pattern: "foo.rs",
+                    line: 5,
+                },
+                NamedPattern {
+                    name: None,
+                    pattern: "bar.rs",
+                    line: 6,
+                },
+            ],
+        },
+        IfChangedBlock {
+            name: None,
+            range: (
+                9,
+                11,
+            ),
+            patterns: [
+                NamedPattern {
+                    name: None,
+                    pattern: "foo.rs",
+                    line: 11,
+                },
+                NamedPattern {
+                    name: None,
+                    pattern: "bar.rs",
+                    line: 12,
+                },
+            ],
+        },
+        IfChangedBlock {
+            name: None,
+            range: (
+                15,
+                17,
+            ),
+            patterns: [
+                NamedPattern {
+                    name: None,
+                    pattern: "foo.rs",
+                    line: 17,
+                },
+                NamedPattern {
+                    name: None,
+                    pattern: "bar.rs",
+                    line: 18,
+                },
+            ],
+        },
+        IfChangedBlock {
+            name: None,
+            range: (
+                20,
+                22,
+            ),
+            patterns: [
+                NamedPattern {
+                    name: None,
+                    pattern: "foo.rs",
+                    line: 22,
+                },
+                NamedPattern {
+                    name: None,
+                    pattern: "bar.rs",
+                    line: 23,
+                },
+            ],
+        },
+        IfChangedBlock {
+            name: None,
+            range: (
+                26,
+                28,
+            ),
+            patterns: [
+                NamedPattern {
+                    name: None,
+                    pattern: "foo.rs",
+                    line: 29,
+                },
+                NamedPattern {
+                    name: None,
+                    pattern: "bar.rs",
+                    line: 30,
+                },
+            ],
+        },
+    ],
+)

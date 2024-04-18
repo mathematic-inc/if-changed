@@ -1,0 +1,44 @@
+---
+source: parser.rs
+expression: "Parser::new(file.path()).unwrap().collect::<Result<Vec<_>, _>>()"
+---
+Ok(
+    [
+        IfChangedBlock {
+            name: Some(
+                "a",
+            ),
+            range: (
+                2,
+                4,
+            ),
+            patterns: [
+                NamedPattern {
+                    name: Some(
+                        "b",
+                    ),
+                    pattern: "",
+                    line: 4,
+                },
+            ],
+        },
+        IfChangedBlock {
+            name: Some(
+                "b",
+            ),
+            range: (
+                6,
+                8,
+            ),
+            patterns: [
+                NamedPattern {
+                    name: Some(
+                        "a",
+                    ),
+                    pattern: "",
+                    line: 8,
+                },
+            ],
+        },
+    ],
+)
