@@ -1,0 +1,8 @@
+---
+source: engine/git.rs
+expression: "extract_pathspecs(b\"a/b, b/c --\").map(|value|\n            value.to_str().unwrap()).collect::<Vec<_>>()"
+---
+[
+    "a/b",
+    "b/c",
+]
