@@ -23,7 +23,7 @@ Options:
   -V, --version              Print version
 ```
 
-### Motivating Example
+### Motivating example
 
 Suppose you have the following:
 
@@ -89,19 +89,47 @@ Once this is commited, the next time `lib.rs` (or `lib.ts`) is changed in the li
 > +// then-change(lib.rs)
 > ```
 
+### Pathspec list
+
+If a block needs to specify several files, you can use commas and/or newlines to separate multiple paths/pathspecs. For example,
+
+```c
+// then-change(foo/bar, baz)
+
+/// OR
+
+// then-change(
+//   foo/bar
+//   bar
+// )
+```
+
+These lists follow the same rules as [`.gitignore` lists](https://git-scm.com/docs/gitignore) except relative pathspecs are always matched against the file it's in, even if the pathspec doesn't contain `/`. Use a beginning `/` to match the pathspec against the repository root, e.g. `/foo/bar`.
+
+### Long paths
+
+If a path is too long, you can use a shell continuation `\` to split it across multiple lines. For example, for the path `this/is/a/really/long/path/to/some/very/far/away/file`, you can do
+
+```c
+// then-change(
+//   this/is/a/really/long/path/to/some/very/far/ \
+//   away/file
+// )
+```
+
 ### Disabling `if-changed`
 
-To disable `if-changed` on a file for a commit, add `Ignore-if-changed: <path-spec>, ... -- [REASON]` to the commit footer where `<path-spec>` is the file path. In general, `<path-spec>` can be any pattern allowed by [fnmatch](https://man7.org/linux/man-pages/man3/fnmatch.3.html).
+To disable `if-changed` on a file for a commit, add `Ignore-if-changed: <pathspec>, ... -- [REASON]` to the commit footer where `<pathspec>` is the file path. In general, `<pathspec>` can be any pattern allowed by [fnmatch](https://man7.org/linux/man-pages/man3/fnmatch.3.html).
 
 > [!NOTE]
 >
 > If you want to disable `if-changed` when diffing the working tree, you can execute `if-changed` with the following:
 >
 > ```bash
-> if-changed !<path-spec> '*'
+> if-changed !<pathspec> '*'
 > ```
 >
-> where `<path-spec>` is the file path you want to ignore. **It's important that `!<path-spec>` is first** (follows from `.gitignore` rules). Again, `<path-spec>` can be any pattern.
+> where `<pathspec>` is the file path you want to ignore. **It's important that `!<pathspec>` is first** (follows from `.gitignore` rules). Again, `<pathspec>` can be any pattern.
 
 ## Contributing
 
