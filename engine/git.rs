@@ -51,6 +51,7 @@ impl<'a> GitEngine<'a> {
     /// Get the diff of a file, if any.
     fn get_diff(&self, path: Option<&Path>) -> git2::Diff {
         let mut options = git2::DiffOptions::new();
+        options.include_untracked(true);
         if let Some(path) = path {
             options.pathspec(path).disable_pathspec_match(true);
         }
@@ -122,6 +123,10 @@ impl Engine for GitEngine<'_> {
         let Some(patch) = self.get_patch(path.as_ref()) else {
             return false;
         };
+        // Special case for untracked files. They are always considered modified.
+        if patch.delta().status() == git2::Delta::Untracked {
+            return true;
+        }
         for (hunk_index, hunk) in (0..patch.num_hunks()).map(|i| (i, patch.hunk(i).unwrap().0)) {
             if usize::try_from(hunk.new_start()).unwrap() > range.1 {
                 break;
