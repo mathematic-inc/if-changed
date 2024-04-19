@@ -104,7 +104,7 @@ If a block needs to specify several files, you can use commas and/or newlines to
 // )
 ```
 
-These lists follow the same rules as [`.gitignore` lists](https://git-scm.com/docs/gitignore) except relative pathspecs are always matched against the file it's in, even if the pathspec doesn't contain `/`. Use a beginning `/` to match the pathspec against the repository root, e.g. `/foo/bar`.
+These pathspecs follow the same rules as [`.gitignore` pathspecs](https://git-scm.com/docs/gitignore#_pattern_format) except relative pathspecs are always matched against the file it's in, even if the pathspec doesn't contain `/`. Use a beginning `/` to match the pathspec against the repository root, e.g. `/foo/bar`.
 
 ### Long paths
 
