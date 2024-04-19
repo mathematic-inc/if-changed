@@ -14,11 +14,11 @@ pub struct IfChangedBlock {
 #[command(author, version, about, long_about = None)]
 pub struct Cli {
     /// The revision to compare against. By default, HEAD is used.
-    #[arg(long)]
+    #[arg(long, env = "PRE_COMMIT_FROM_REF")]
     pub from_ref: Option<String>,
 
     /// The revision to compare with. By default, the current working tree is used.
-    #[arg(long)]
+    #[arg(long, env = "PRE_COMMIT_TO_REF")]
     pub to_ref: Option<String>,
 
     /// Git pathspec defining the set of files to check. By default, this will be all changed files between revisions.
