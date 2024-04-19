@@ -243,13 +243,26 @@ mod tests {
     }
 
     #[test]
-    #[should_panic]
     fn test_git_without_head() {
-        let (_tempdir, repo) = git_test! {
-           staged: ["a" => "a", "b" => "b"]
+        let (tempdir, repo) = git_test! {
+            staged: ["a" => "a", "b" => "b"]
         };
 
-        git(&repo, None, None);
+        let engine = git(&repo, None, None);
+        assert_eq!(engine.resolve(""), tempdir.path().canonicalize().unwrap());
+
+        insta::assert_debug_snapshot!(engine.changed_paths().collect::<Vec<_>>(), @r###"
+        [
+            "a",
+            "b",
+        ]
+        "###);
+        insta::assert_debug_snapshot!(engine.paths("a").collect::<Vec<_>>(), @r###"
+        [
+            "a",
+        ]
+        "###);
+        assert!(!engine.is_ignored(Path::new("a")));
     }
 
     #[test]
