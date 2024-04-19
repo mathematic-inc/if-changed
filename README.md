@@ -23,7 +23,7 @@ Options:
   -V, --version              Print version
 ```
 
-## Motivating Example
+### Motivating Example
 
 Suppose you have the following:
 
@@ -49,46 +49,53 @@ Typically, to synchronize these enums, a common approach is to extract the enum 
 
 This is where `if-changed` comes in. Instead of the above, suppose we have:
 
-```rs
-// lib.rs
-// if-changed(ecrs)
-enum ErrorCode {
-    A,
-    B,
-    C,
-}
-// then-change(lib.ts:ects)
+```diff
+ // lib.rs
++// if-changed(ecrs)
+ enum ErrorCode {
+     A,
+     B,
+     C,
+ }
++// then-change(lib.ts:ects)
 ```
 
-```ts
-// lib.ts
-// if-changed(ects)
-const enum ErrorCode {
-  A,
-  B,
-  C,
-}
-// then-change(lib.rs:ecrs)
+```diff
+ // lib.ts
++// if-changed(ects)
+ const enum ErrorCode {
+   A,
+   B,
+   C,
+ }
++// then-change(lib.rs:ecrs)
 ```
 
 Once this is commited, the next time `lib.rs` (or `lib.ts`) is changed in the lines surrounded by `"if-changed"` and `"then-change"`, `if-changed` will error if the other file (referenced in the `"then-change"` comment) does not have any changes in the corresponding named block.
 
+> ![TIP]
+>
 > If you just want to assert that any change in a file is ok, then just reference the file without the name. For example,
 >
-> ```ts
-> // lib.ts
-> // if-changed(ects)
-> const enum ErrorCode {
->   A,
->   B,
->   C,
-> }
-> // then-change(lib.rs)
+> ```diff
+>  // lib.ts
+>  // if-changed(ects)
+>  const enum ErrorCode {
+>    A,
+>    B,
+>    C,
+>  }
+> -// then-change(lib.rs:ecrs)
+> +// then-change(lib.rs)
 > ```
 
 ### Disabling `if-changed`
 
-To disable `if-changed` on a file for a commit, add `Ignore-if-changed: <path-spec>, ... -- [REASON]` to the commit footer where `<path-spec>` is the file path. In general, `<path-spec>` can be any pattern allowed by [fnmatch](https://man7.org/linux/man-pages/man3/fnmatch.3.html). Note this isn't possible for the current working tree.
+To disable `if-changed` on a file for a commit, add `Ignore-if-changed: <path-spec>, ... -- [REASON]` to the commit footer where `<path-spec>` is the file path. In general, `<path-spec>` can be any pattern allowed by [fnmatch](https://man7.org/linux/man-pages/man3/fnmatch.3.html).
+
+> [!NOTE]
+>
+> If you want to disable `if-changed` when diffing the working tree, just exclude the file from the command line.
 
 ## Contributing
 
