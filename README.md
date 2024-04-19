@@ -73,7 +73,7 @@ This is where `if-changed` comes in. Instead of the above, suppose we have:
 
 Once this is commited, the next time `lib.rs` (or `lib.ts`) is changed in the lines surrounded by `"if-changed"` and `"then-change"`, `if-changed` will error if the other file (referenced in the `"then-change"` comment) does not have any changes in the corresponding named block.
 
-> ![TIP]
+> [!TIP]
 >
 > If you just want to assert that any change in a file is ok, then just reference the file without the name. For example,
 >
