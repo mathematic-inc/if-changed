@@ -1,6 +1,6 @@
 [package]
 name = "if-changed"
-version = "0.0.0"
+version = "0.1.0"
 edition = "2021"
 description = "A pre-submit for file changes."
 license = "MIT OR Apache-2.0"
