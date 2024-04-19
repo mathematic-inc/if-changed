@@ -14,7 +14,7 @@ cargo install if-changed
 Usage: if-changed [OPTIONS] [FILES]...
 
 Arguments:
-  [FILES]...  File to check for dependent changes
+  [FILES]...  Files to check for dependent changes. By default, this will be all changed files between revisions.
 
 Options:
       --from-ref <FROM_REF>  The revision to compare against. By default, HEAD is used

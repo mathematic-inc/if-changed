@@ -17,12 +17,11 @@ pub struct Cli {
     #[arg(long)]
     pub from_ref: Option<String>,
 
-    /// The revision to compare with. By default, the current working tree is
-    /// used.
+    /// The revision to compare with. By default, the current working tree is used.
     #[arg(long)]
     pub to_ref: Option<String>,
 
-    /// File to check for dependent changes.
+    /// Files to check for dependent changes. By default, this will be all changed files between revisions.
     #[arg()]
     pub files: Vec<PathBuf>,
 }
