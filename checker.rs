@@ -14,8 +14,7 @@ impl<'a, E: Engine + ?Sized> Checker<'a, E> {
         Ok(Self {
             engine,
             path,
-            parser: Parser::new(engine.root().join(path))
-                .map_err(|error| vec![error.to_string()])?,
+            parser: Parser::new(engine.resolve(path)).map_err(|error| vec![error.to_string()])?,
         })
     }
 
@@ -54,9 +53,17 @@ impl<'a, E: Engine + ?Sized> Checker<'a, E> {
                     .to_string_lossy()
                     .into_owned();
 
-                for path in self.engine.matched_paths(&pattern) {
+                // Every pattern must match at least one file.
+                let mut path_found = false;
+                for path in self.engine.paths(&pattern) {
+                    path_found = true;
+
                     // If the file isn't modified, then we immediately fail.
-                    if !self.engine.is_modified(&path) {
+                    if self
+                        .engine
+                        .changed_paths()
+                        .all(|changed_path| changed_path != path)
+                    {
                         errors.push(format!(
                             "Expected {path:?} to be modified because of \"then-change\" in {:?} at line {line}.",
                             self.path,
@@ -70,7 +77,7 @@ impl<'a, E: Engine + ?Sized> Checker<'a, E> {
                     };
 
                     // Try to open the file in search of the named block.
-                    let mut parser = match Parser::new(self.engine.root().join(&path)) {
+                    let mut parser = match Parser::new(self.engine.resolve(&path)) {
                         Ok(parser) => parser,
                         Err(error) => {
                             errors.push(format!(
@@ -105,6 +112,13 @@ impl<'a, E: Engine + ?Sized> Checker<'a, E> {
                         }
                         Err(error) => errors.extend(error),
                     }
+                }
+
+                if !path_found {
+                    errors.push(format!(
+                        "Could not find any file matching {pattern:?} for \"then-change\" in {:?} at line {line}.",
+                        self.path.display(),
+                    ));
                 }
             }
         }
@@ -148,7 +162,7 @@ mod tests {
         };
 
         let engine = crate::git(&repo, None, None);
-        assert_eq!(engine.root(), tempdir.path().canonicalize().unwrap());
+        assert_eq!(engine.resolve(""), tempdir.path().canonicalize().unwrap());
 
         let mut changed_paths = engine.changed_paths().collect::<Vec<_>>();
         changed_paths.sort();
@@ -187,7 +201,7 @@ mod tests {
         };
 
         let engine = crate::git(&repo, None, None);
-        assert_eq!(engine.root(), tempdir.path().canonicalize().unwrap());
+        assert_eq!(engine.resolve(""), tempdir.path().canonicalize().unwrap());
 
         insta::assert_debug_snapshot!(engine.changed_paths().collect::<Vec<_>>(), @r###"
         [
@@ -225,7 +239,7 @@ mod tests {
         };
 
         let engine = crate::git(&repo, None, None);
-        assert_eq!(engine.root(), tempdir.path().canonicalize().unwrap());
+        assert_eq!(engine.resolve(""), tempdir.path().canonicalize().unwrap());
 
         insta::assert_debug_snapshot!(engine.changed_paths().collect::<Vec<_>>(), @r###"
         [
@@ -269,7 +283,7 @@ mod tests {
         };
 
         let engine = crate::git(&repo, None, None);
-        assert_eq!(engine.root(), tempdir.path().canonicalize().unwrap());
+        assert_eq!(engine.resolve(""), tempdir.path().canonicalize().unwrap());
 
         let mut changed_paths = engine.changed_paths().collect::<Vec<_>>();
         changed_paths.sort();
@@ -318,7 +332,7 @@ mod tests {
         };
 
         let engine = crate::git(&repo, None, None);
-        assert_eq!(engine.root(), tempdir.path().canonicalize().unwrap());
+        assert_eq!(engine.resolve(""), tempdir.path().canonicalize().unwrap());
 
         let mut changed_paths = engine.changed_paths().collect::<Vec<_>>();
         changed_paths.sort();
@@ -360,7 +374,7 @@ mod tests {
         };
 
         let engine = crate::git(&repo, None, None);
-        assert_eq!(engine.root(), tempdir.path().canonicalize().unwrap());
+        assert_eq!(engine.resolve(""), tempdir.path().canonicalize().unwrap());
 
         let mut changed_paths = engine.changed_paths().collect::<Vec<_>>();
         changed_paths.sort();
