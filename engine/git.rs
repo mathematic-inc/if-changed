@@ -1,9 +1,7 @@
-use std::{
-    collections::HashSet,
-    path::{Path, PathBuf},
-};
+use std::path::{Path, PathBuf};
 
 use bstr::ByteSlice;
+use genawaiter::{rc::gen, yield_};
 
 use super::Engine;
 
@@ -18,8 +16,6 @@ pub fn git<'repo>(
 }
 
 struct GitEngine<'a> {
-    root: PathBuf,
-    changed_paths: HashSet<PathBuf>,
     ignore_pathspec: Option<git2::Pathspec>,
     repository: &'a git2::Repository,
     from_tree: git2::Tree<'a>,
@@ -44,34 +40,8 @@ impl<'a> GitEngine<'a> {
                 .unwrap()
         });
 
-        let changed_paths = {
-            let mut options = git2::DiffOptions::new();
-            match &to_tree {
-                Some(to_tree) => repository.diff_tree_to_tree(
-                    Some(&from_tree),
-                    Some(to_tree),
-                    Some(&mut options),
-                ),
-                None => {
-                    repository.diff_tree_to_workdir_with_index(Some(&from_tree), Some(&mut options))
-                }
-            }
-            .unwrap()
-            .deltas()
-            .map(|delta| delta.new_file().path().unwrap().to_owned())
-            .collect::<HashSet<_>>()
-        };
-
-        let root = repository
-            .workdir()
-            .expect("bare repos are not supported")
-            .canonicalize()
-            .unwrap();
-
         Self {
-            root,
             ignore_pathspec,
-            changed_paths,
             repository,
             from_tree,
             to_tree,
@@ -79,9 +49,11 @@ impl<'a> GitEngine<'a> {
     }
 
     /// Get the diff of a file, if any.
-    fn get_diff(&self, path: &Path) -> git2::Diff {
+    fn get_diff(&self, path: Option<&Path>) -> git2::Diff {
         let mut options = git2::DiffOptions::new();
-        options.pathspec(path).disable_pathspec_match(true);
+        if let Some(path) = path {
+            options.pathspec(path).disable_pathspec_match(true);
+        }
         match &self.to_tree {
             Some(to_tree) => self.repository.diff_tree_to_tree(
                 Some(&self.from_tree),
@@ -92,56 +64,62 @@ impl<'a> GitEngine<'a> {
                 .repository
                 .diff_tree_to_workdir_with_index(Some(&self.from_tree), Some(&mut options)),
         }
-        .unwrap_or_else(|_| panic!("failed to diff {}", path.display()))
+        .unwrap()
     }
 
     /// Get the patch of a file, if any.
     fn get_patch(&self, path: &Path) -> Option<git2::Patch> {
-        git2::Patch::from_diff(&self.get_diff(path), 0)
+        git2::Patch::from_diff(&self.get_diff(Some(path)), 0)
             .ok()
             .flatten()
     }
 }
 
 impl Engine for GitEngine<'_> {
-    fn root(&self) -> &Path {
-        &self.root
-    }
-
-    fn changed_paths(&self) -> impl Iterator<Item = &PathBuf> {
-        self.changed_paths.iter()
-    }
-
-    fn matched_paths(&self, mut spec: &str) -> impl Iterator<Item = PathBuf> {
+    fn paths(&self, mut spec: &str) -> impl Iterator<Item = PathBuf> {
         if spec.starts_with('/') {
             spec = &spec[1..];
         }
-        let pathspec = git2::Pathspec::new([spec]).unwrap();
-        let matches = pathspec
-            .match_workdir(self.repository, git2::PathspecFlags::DEFAULT)
-            .expect("bare repos are not supported");
-        matches
-            .entries()
-            .map(|entry| Path::new(&entry.to_os_str_lossy()).to_owned())
-            .collect::<Vec<_>>()
-            .into_iter()
-    }
-
-    fn is_modified(&self, path: &Path) -> bool {
-        self.changed_paths.contains(path)
-    }
-
-    fn is_ignored(&self, path: &Path) -> bool {
-        if let Some(path_spec) = &self.ignore_pathspec {
-            if path_spec.matches_path(path, git2::PathspecFlags::DEFAULT) {
-                return true;
+        gen!({
+            let pathspec = git2::Pathspec::new([spec]).unwrap();
+            let matches = pathspec
+                .match_workdir(self.repository, git2::PathspecFlags::DEFAULT)
+                .expect("bare repos are not supported");
+            for entry in matches.entries() {
+                yield_!(Path::new(&entry.to_os_str_lossy()).to_owned())
             }
-        }
-        false
+        })
+        .into_iter()
     }
 
-    fn is_range_modified(&self, path: &Path, range: (usize, usize)) -> bool {
-        let Some(patch) = self.get_patch(path) else {
+    fn changed_paths(&self) -> impl Iterator<Item = PathBuf> {
+        gen!({
+            let diff = self.get_diff(None);
+            for delta in diff.deltas() {
+                yield_!(delta.new_file().path().unwrap().to_owned())
+            }
+        })
+        .into_iter()
+    }
+
+    fn resolve(&self, path: impl AsRef<Path>) -> PathBuf {
+        self.repository
+            .workdir()
+            .expect("bare repos are not supported")
+            .canonicalize()
+            .unwrap()
+            .join(path.as_ref())
+    }
+
+    fn is_ignored(&self, path: impl AsRef<Path>) -> bool {
+        let Some(pathspec) = &self.ignore_pathspec else {
+            return false;
+        };
+        pathspec.matches_path(path.as_ref(), git2::PathspecFlags::DEFAULT)
+    }
+
+    fn is_range_modified(&self, path: impl AsRef<Path>, range: (usize, usize)) -> bool {
+        let Some(patch) = self.get_patch(path.as_ref()) else {
             return false;
         };
         for (hunk_index, hunk) in (0..patch.num_hunks()).map(|i| (i, patch.hunk(i).unwrap().0)) {
@@ -240,10 +218,10 @@ mod tests {
         };
 
         let engine = git(&repo, None, None);
-        assert_eq!(engine.root(), tempdir.path().canonicalize().unwrap());
+        assert_eq!(engine.resolve(""), tempdir.path().canonicalize().unwrap());
 
         insta::assert_debug_snapshot!(engine.changed_paths().collect::<Vec<_>>(), @"[]");
-        insta::assert_debug_snapshot!(engine.matched_paths("a").collect::<Vec<_>>(), @r###"
+        insta::assert_debug_snapshot!(engine.paths("a").collect::<Vec<_>>(), @r###"
         [
             "a",
         ]
@@ -268,31 +246,31 @@ mod tests {
         };
 
         let engine = git(&repo, None, None);
-        assert_eq!(engine.root(), tempdir.path().canonicalize().unwrap());
+        assert_eq!(engine.resolve(""), tempdir.path().canonicalize().unwrap());
 
-        insta::assert_debug_snapshot!(engine.matched_paths("b").collect::<Vec<_>>(), @"[]");
-        insta::assert_debug_snapshot!(engine.matched_paths("a").collect::<Vec<_>>(), @r###"
+        insta::assert_debug_snapshot!(engine.paths("b").collect::<Vec<_>>(), @"[]");
+        insta::assert_debug_snapshot!(engine.paths("a").collect::<Vec<_>>(), @r###"
         [
             "a",
         ]
         "###);
-        insta::assert_debug_snapshot!(engine.matched_paths("/a").collect::<Vec<_>>(), @r###"
+        insta::assert_debug_snapshot!(engine.paths("/a").collect::<Vec<_>>(), @r###"
         [
             "a",
         ]
         "###);
-        insta::assert_debug_snapshot!(engine.matched_paths("*/a").collect::<Vec<_>>(), @r###"
+        insta::assert_debug_snapshot!(engine.paths("*/a").collect::<Vec<_>>(), @r###"
         [
             "c/a",
         ]
         "###);
-        insta::assert_debug_snapshot!(engine.matched_paths("*a").collect::<Vec<_>>(), @r###"
+        insta::assert_debug_snapshot!(engine.paths("*a").collect::<Vec<_>>(), @r###"
         [
             "a",
             "c/a",
         ]
         "###);
-        insta::assert_debug_snapshot!(engine.matched_paths("*/b").collect::<Vec<_>>(), @r###"
+        insta::assert_debug_snapshot!(engine.paths("*/b").collect::<Vec<_>>(), @r###"
         [
             "c/b",
             "d/b",
@@ -309,7 +287,7 @@ mod tests {
         };
 
         let engine = git(&repo, None, None);
-        assert_eq!(engine.root(), tempdir.path().canonicalize().unwrap());
+        assert_eq!(engine.resolve(""), tempdir.path().canonicalize().unwrap());
 
         let mut changed_paths = engine.changed_paths().collect::<Vec<_>>();
         changed_paths.sort();
@@ -329,7 +307,7 @@ mod tests {
         };
 
         let engine = git(&repo, None, None);
-        assert_eq!(engine.root(), tempdir.path().canonicalize().unwrap());
+        assert_eq!(engine.resolve(""), tempdir.path().canonicalize().unwrap());
 
         insta::assert_debug_snapshot!(engine.changed_paths().collect::<Vec<_>>(), @r###"
         [
@@ -346,7 +324,7 @@ mod tests {
         };
 
         let engine = git(&repo, None, None);
-        assert_eq!(engine.root(), tempdir.path().canonicalize().unwrap());
+        assert_eq!(engine.resolve(""), tempdir.path().canonicalize().unwrap());
 
         insta::assert_debug_snapshot!(engine.changed_paths().collect::<Vec<_>>(), @r###"
         [
@@ -363,7 +341,7 @@ mod tests {
         };
 
         let engine = git(&repo, Some("HEAD~1"), Some("HEAD"));
-        assert_eq!(engine.root(), tempdir.path().canonicalize().unwrap());
+        assert_eq!(engine.resolve(""), tempdir.path().canonicalize().unwrap());
 
         assert!(!engine.is_ignored(Path::new("a")));
         assert!(!engine.is_ignored(Path::new("c/a")));
@@ -377,7 +355,7 @@ mod tests {
         };
 
         let engine = git(&repo, Some("HEAD~1"), Some("HEAD"));
-        assert_eq!(engine.root(), tempdir.path().canonicalize().unwrap());
+        assert_eq!(engine.resolve(""), tempdir.path().canonicalize().unwrap());
 
         assert!(!engine.is_ignored(Path::new("a")));
         assert!(engine.is_ignored(Path::new("c/a")));

@@ -7,23 +7,20 @@ pub use git::git;
 use super::checker::Checker;
 
 pub trait Engine {
-    /// Get the root path of the engine.
-    fn root(&self) -> &Path;
-
     /// Get the paths that have been changed.
-    fn changed_paths(&self) -> impl Iterator<Item = &PathBuf>;
+    fn changed_paths(&self) -> impl Iterator<Item = PathBuf>;
 
     /// Get the paths that match a given pattern.
-    fn matched_paths(&self, pattern: &str) -> impl Iterator<Item = PathBuf>;
+    fn paths(&self, pattern: &str) -> impl Iterator<Item = PathBuf>;
 
-    /// Check if a file has been modified.
-    fn is_modified(&self, path: &Path) -> bool;
+    /// Resolve a path relative to an absolute path.
+    fn resolve(&self, path: impl AsRef<Path>) -> PathBuf;
 
     /// Check if a file has been ignored.
-    fn is_ignored(&self, path: &Path) -> bool;
+    fn is_ignored(&self, path: impl AsRef<Path>) -> bool;
 
     /// Check if a range of lines in a file has been modified.
-    fn is_range_modified(&self, path: &Path, range: (usize, usize)) -> bool;
+    fn is_range_modified(&self, path: impl AsRef<Path>, range: (usize, usize)) -> bool;
 
     /// Check a file for dependent changes.
     fn check(&self, path: impl AsRef<Path>) -> Result<(), Vec<String>> {

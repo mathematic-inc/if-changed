@@ -19,6 +19,7 @@ path = "bin/if-changed.rs"
 [dependencies]
 bstr = "1"
 clap = { version = "4", features = ["derive"] }
+genawaiter = "0.99"
 git2 = "0.18"
 
 [dev-dependencies]

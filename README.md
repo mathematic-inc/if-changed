@@ -11,10 +11,10 @@ cargo install if-changed
 ## Usage
 
 ```bash
-Usage: if-changed [OPTIONS] [FILES]...
+Usage: if-changed [OPTIONS] [PATHSPEC]...
 
 Arguments:
-  [FILES]...  Files to check for dependent changes. By default, this will be all changed files between revisions.
+  [PATHSPEC]...  Git pathspec defining the set of files to check. By default, this will be all changed files between revisions
 
 Options:
       --from-ref <FROM_REF>  The revision to compare against. By default, HEAD is used
@@ -95,7 +95,13 @@ To disable `if-changed` on a file for a commit, add `Ignore-if-changed: <path-sp
 
 > [!NOTE]
 >
-> If you want to disable `if-changed` when diffing the working tree, just exclude the file from the command line.
+> If you want to disable `if-changed` when diffing the working tree, you can execute `if-changed` with the following:
+>
+> ```bash
+> if-changed !<path-spec> '*'
+> ```
+>
+> where `<path-spec>` is the file path you want to ignore. **It's important that `!<path-spec>` is first** (follows from `.gitignore` rules). Again, `<path-spec>` can be any pattern.
 
 ## Contributing
 
