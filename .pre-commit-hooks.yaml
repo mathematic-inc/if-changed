@@ -1,0 +1,6 @@
+# https://pre-commit.com/
+
+- id: if-changed
+  name: if-changed
+  language: rust
+  entry: if-changed

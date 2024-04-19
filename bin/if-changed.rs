@@ -21,9 +21,9 @@ pub struct Cli {
     #[arg(long)]
     pub to_ref: Option<String>,
 
-    /// Files to check for dependent changes. By default, this will be all changed files between revisions.
+    /// Git pathspec defining the set of files to check. By default, this will be all changed files between revisions.
     #[arg()]
-    pub files: Vec<PathBuf>,
+    pub pathspec: Vec<String>,
 }
 
 fn main() -> ExitCode {
@@ -31,16 +31,10 @@ fn main() -> ExitCode {
 
     let repository = git2::Repository::open_from_env().unwrap();
     let engine = git(&repository, cli.from_ref.as_deref(), cli.to_ref.as_deref());
-    let mut files = cli.files;
-    if files.is_empty() {
-        for path in engine.changed_paths() {
-            files.push(path.clone());
-        }
-    }
-
+    let pathspec = git2::Pathspec::new(&cli.pathspec).unwrap();
     let mut has_error = false;
-    for path in files {
-        if engine.is_ignored(&path) {
+    for path in engine.changed_paths() {
+        if !pathspec.matches_path(&path, Default::default()) || engine.is_ignored(&path) {
             continue;
         }
         if let Err(errors) = engine.check(path) {
