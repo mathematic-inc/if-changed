@@ -18,7 +18,7 @@ pub fn git<'repo>(
 struct GitEngine<'a> {
     ignore_pathspec: Option<git2::Pathspec>,
     repository: &'a git2::Repository,
-    from_tree: git2::Tree<'a>,
+    from_tree: Option<git2::Tree<'a>>,
     to_tree: Option<git2::Tree<'a>>,
 }
 
@@ -26,11 +26,19 @@ impl<'a> GitEngine<'a> {
     fn new(repository: &'a git2::Repository, from_ref: Option<&str>, to_ref: Option<&str>) -> Self {
         let ignore_pathspec = ignore_pathspec(to_ref, repository);
 
-        let from_tree = repository
-            .revparse_single(from_ref.unwrap_or("HEAD"))
-            .expect("from_ref is not a valid revision")
-            .peel_to_tree()
-            .expect("from_ref does not point to a tree");
+        let from_tree = match from_ref {
+            Some(from_ref) => Some(
+                repository
+                    .revparse_single(from_ref)
+                    .expect("from_ref is not a valid revision")
+                    .peel_to_tree()
+                    .expect("from_ref does not point to a tree"),
+            ),
+            None => repository
+                .head()
+                .map(|head| head.peel_to_tree().unwrap())
+                .ok(),
+        };
 
         let to_tree = to_ref.map(|to_ref| {
             repository
@@ -57,13 +65,13 @@ impl<'a> GitEngine<'a> {
         }
         match &self.to_tree {
             Some(to_tree) => self.repository.diff_tree_to_tree(
-                Some(&self.from_tree),
+                self.from_tree.as_ref(),
                 Some(to_tree),
                 Some(&mut options),
             ),
             None => self
                 .repository
-                .diff_tree_to_workdir_with_index(Some(&self.from_tree), Some(&mut options)),
+                .diff_tree_to_workdir_with_index(self.from_tree.as_ref(), Some(&mut options)),
         }
         .unwrap()
     }
