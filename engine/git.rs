@@ -1,6 +1,7 @@
 use std::{
-    borrow::BorrowMut,
-    path::{Path, PathBuf},
+    borrow::{BorrowMut, Cow},
+    path::{Path, PathBuf, MAIN_SEPARATOR_STR},
+    str::FromStr as _,
 };
 
 use bstr::ByteSlice;
@@ -93,13 +94,16 @@ impl<'a> GitEngine<'a> {
 impl Engine for GitEngine<'_> {
     fn matches(
         &self,
-        patterns: impl IntoIterator<Item = impl AsRef<str>>,
-    ) -> impl Iterator<Item = Result<PathBuf, String>> {
+        patterns: impl IntoIterator<Item = impl AsRef<Path>>,
+    ) -> impl Iterator<Item = Result<PathBuf, PathBuf>> {
         let mut patterns = patterns
             .into_iter()
             .map(|pattern| {
                 let pattern = pattern.as_ref();
-                pattern.strip_prefix('/').unwrap_or(pattern).to_owned()
+                pattern
+                    .strip_prefix(MAIN_SEPARATOR_STR)
+                    .unwrap_or(pattern)
+                    .to_owned()
             })
             .collect::<Vec<_>>();
 
@@ -123,7 +127,7 @@ impl Engine for GitEngine<'_> {
                 yield_!(Ok(delta.new_file().path().unwrap().to_owned()))
             }
             for entry in matches.failed_entries() {
-                yield_!(Err(entry.to_str_lossy().into_owned()))
+                yield_!(Err(PathBuf::from_str(&entry.to_str_lossy()).unwrap()))
             }
         })
         .into_iter()
@@ -201,6 +205,7 @@ fn ignore_pathspec(to_ref: Option<&str>, repository: &git2::Repository) -> Optio
         .iter()
         .filter(|(name, _)| name.to_ascii_lowercase() == IF_CHANGED_IGNORE_TRAILER)
         .flat_map(|(_, value)| split_patterns(value))
+        .map(|pattern| PathBuf::from_str(&pattern).unwrap())
         .collect::<Vec<_>>();
     if patterns.is_empty() {
         None
@@ -209,13 +214,13 @@ fn ignore_pathspec(to_ref: Option<&str>, repository: &git2::Repository) -> Optio
     }
 }
 
-fn split_patterns(value: &[u8]) -> impl Iterator<Item = &[u8]> {
+fn split_patterns(value: &[u8]) -> impl Iterator<Item = Cow<str>> {
     value
         .split_once_str(b"--")
         .unwrap_or((value, b""))
         .0
         .split_str(b",")
-        .map(|s| s.trim())
+        .map(|s| s.trim().to_str_lossy())
 }
 
 #[cfg(test)]
@@ -227,9 +232,7 @@ mod tests {
         ($name:ident, $val:expr) => {
             #[test]
             fn $name() {
-                insta::assert_debug_snapshot!(split_patterns($val)
-                    .map(|value| value.to_str().unwrap())
-                    .collect::<Vec<_>>());
+                insta::assert_debug_snapshot!(split_patterns($val).collect::<Vec<_>>());
             }
         };
     }
