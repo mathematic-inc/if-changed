@@ -15,8 +15,8 @@ pub trait Engine {
     /// If patterns is empty, all changed files are returned.
     fn matches(
         &self,
-        patterns: impl IntoIterator<Item = impl AsRef<str>>,
-    ) -> impl Iterator<Item = Result<PathBuf, String>>;
+        patterns: impl IntoIterator<Item = impl AsRef<Path>>,
+    ) -> impl Iterator<Item = Result<PathBuf, PathBuf>>;
 
     /// Resolve a path relative to an absolute path.
     fn resolve(&self, path: impl AsRef<Path>) -> PathBuf;
@@ -49,14 +49,10 @@ pub trait Engine {
                 .into_iter()
                 .map(|mut pattern| {
                     // Empty pattern means current file.
-                    pattern.value = if pattern.value.is_empty() {
-                        path.to_string_lossy().into_owned()
+                    pattern.value = if pattern.value == Path::new("") {
+                        path.to_owned()
                     } else {
-                        path.parent()
-                            .unwrap()
-                            .join(&pattern.value)
-                            .to_string_lossy()
-                            .into_owned()
+                        path.parent().unwrap().join(&pattern.value)
                     };
                     pattern
                 })

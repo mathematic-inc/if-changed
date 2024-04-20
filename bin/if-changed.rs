@@ -1,14 +1,7 @@
-use std::{path::PathBuf, process::ExitCode};
+use std::process::ExitCode;
 
 use clap::Parser as ClapParser;
 use if_changed::{git, Engine as _};
-
-#[derive(Clone, Debug)]
-pub struct IfChangedBlock {
-    pub name: Option<String>,
-    pub range: (usize, usize),
-    pub paths: Vec<(usize, PathBuf, Option<String>)>,
-}
 
 #[derive(ClapParser, Debug)]
 #[command(author, version, about, long_about = None)]
