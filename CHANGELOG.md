@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.3.0](https://github.com/mathematic-inc/if-changed/compare/v0.2.0...v0.3.0) (2024-04-20)
+
+
+### ⚠ BREAKING CHANGES
+
+* reverse pattern matching
+
+### Features
+
+* Reverse pattern matching ([7d09224](https://github.com/mathematic-inc/if-changed/commit/7d092248560313564a55ef58e6e73e54cb00afc2))
+
 ## [0.2.0](https://github.com/mathematic-inc/if-changed/compare/v0.1.0...v0.2.0) (2024-04-19)
 
 
