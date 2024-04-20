@@ -3,6 +3,7 @@ use std::{
     io::{self, BufRead},
     ops::{Deref, DerefMut},
     path::{Path, PathBuf},
+    str::FromStr,
 };
 
 use super::IfChangedBlock;
@@ -263,7 +264,7 @@ impl Parser {
 
             related_paths.push(Pattern {
                 name,
-                value: pattern,
+                value: PathBuf::from_str(&pattern).unwrap(),
                 line: pattern_line,
             });
             if right_paren_found {
