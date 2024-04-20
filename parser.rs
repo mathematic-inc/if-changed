@@ -89,7 +89,7 @@ pub(super) struct Parser {
 impl Parser {
     pub(super) fn new(path: impl AsRef<Path>) -> Result<Parser, io::Error> {
         Ok(Parser {
-            path: path.as_ref().to_path_buf(),
+            path: path.as_ref().to_owned(),
             lines: io::BufReader::new(match fs::File::open(&path) {
                 Ok(file) => file,
                 Err(error) => return Err(error),
@@ -345,19 +345,19 @@ mod tests {
     use super::Parser;
 
     macro_rules! parser_test {
-        ($name:ident, $value:expr) => {
+        ($name:ident, $value:expr, @$exp:literal) => {
             #[test]
             fn $name() {
                 let mut file = NamedTempFile::new().unwrap();
                 writeln!(file, $value).unwrap();
-                insta::assert_debug_snapshot!(Parser::new(file.path())
+                insta::assert_compact_json_snapshot!(Parser::new(file.path())
                     .unwrap()
-                    .collect::<Result<Vec<_>, _>>());
+                    .collect::<Result<Vec<_>, _>>(), @$exp);
             }
         };
     }
 
-    parser_test!(it_parses_empty_files, "");
+    parser_test!(it_parses_empty_files, "", @r###"{"Ok": []}"###);
 
     parser_test!(
         it_parses,
@@ -369,7 +369,40 @@ mod tests {
             // if-changed(some-name)
             const FOO: u32 = 0;
             // then-change(foo.rs)
-        "
+        ", @r###"
+    {
+      "Ok": [
+        {
+          "name": null,
+          "range": [
+            2,
+            4
+          ],
+          "patterns": [
+            {
+              "name": null,
+              "value": "foo.rs",
+              "line": 4
+            }
+          ]
+        },
+        {
+          "name": "some-name",
+          "range": [
+            6,
+            8
+          ],
+          "patterns": [
+            {
+              "name": null,
+              "value": "foo.rs",
+              "line": 8
+            }
+          ]
+        }
+      ]
+    }
+    "###
     );
 
     parser_test!(
@@ -382,12 +415,45 @@ mod tests {
             // if-changed(b)
             const FOO: u32 = 0;
             // then-change(:a)
-        "
+        ", @r###"
+    {
+      "Ok": [
+        {
+          "name": "a",
+          "range": [
+            2,
+            4
+          ],
+          "patterns": [
+            {
+              "name": "b",
+              "value": "",
+              "line": 4
+            }
+          ]
+        },
+        {
+          "name": "b",
+          "range": [
+            6,
+            8
+          ],
+          "patterns": [
+            {
+              "name": "a",
+              "value": "",
+              "line": 8
+            }
+          ]
+        }
+      ]
+    }
+    "###
     );
 
     parser_test!(
         it_parses_inline_blocks,
-        "// if-changed this is a test then-change(foo.rs)"
+        "// if-changed this is a test then-change(foo.rs)", @r###"{"Ok": [{"name": null, "range": [1, 1], "patterns": [{"name": null, "value": "foo.rs", "line": 1}]}]}"###
     );
 
     parser_test!(
@@ -400,7 +466,55 @@ mod tests {
             // if-changed
             const FOO: u32 = 0;
             // then-change(foo.rs, bar.rs, baz.rs)
-        "
+        ", @r###"
+    {
+      "Ok": [
+        {
+          "name": null,
+          "range": [
+            2,
+            4
+          ],
+          "patterns": [
+            {
+              "name": null,
+              "value": "foo.rs",
+              "line": 4
+            },
+            {
+              "name": null,
+              "value": "bar.rs",
+              "line": 4
+            }
+          ]
+        },
+        {
+          "name": null,
+          "range": [
+            6,
+            8
+          ],
+          "patterns": [
+            {
+              "name": null,
+              "value": "foo.rs",
+              "line": 8
+            },
+            {
+              "name": null,
+              "value": "bar.rs",
+              "line": 8
+            },
+            {
+              "name": null,
+              "value": "baz.rs",
+              "line": 8
+            }
+          ]
+        }
+      ]
+    }
+    "###
     );
 
     parser_test!(
@@ -436,7 +550,107 @@ mod tests {
             //   foo.rs
             //   bar.rs
             // )
-        "
+        ", @r###"
+    {
+      "Ok": [
+        {
+          "name": null,
+          "range": [
+            2,
+            4
+          ],
+          "patterns": [
+            {
+              "name": null,
+              "value": "foo.rs",
+              "line": 5
+            },
+            {
+              "name": null,
+              "value": "bar.rs",
+              "line": 6
+            }
+          ]
+        },
+        {
+          "name": null,
+          "range": [
+            9,
+            11
+          ],
+          "patterns": [
+            {
+              "name": null,
+              "value": "foo.rs",
+              "line": 11
+            },
+            {
+              "name": null,
+              "value": "bar.rs",
+              "line": 12
+            }
+          ]
+        },
+        {
+          "name": null,
+          "range": [
+            15,
+            17
+          ],
+          "patterns": [
+            {
+              "name": null,
+              "value": "foo.rs",
+              "line": 17
+            },
+            {
+              "name": null,
+              "value": "bar.rs",
+              "line": 18
+            }
+          ]
+        },
+        {
+          "name": null,
+          "range": [
+            20,
+            22
+          ],
+          "patterns": [
+            {
+              "name": null,
+              "value": "foo.rs",
+              "line": 22
+            },
+            {
+              "name": null,
+              "value": "bar.rs",
+              "line": 23
+            }
+          ]
+        },
+        {
+          "name": null,
+          "range": [
+            26,
+            28
+          ],
+          "patterns": [
+            {
+              "name": null,
+              "value": "foo.rs",
+              "line": 29
+            },
+            {
+              "name": null,
+              "value": "bar.rs",
+              "line": 30
+            }
+          ]
+        }
+      ]
+    }
+    "###
     );
 
     parser_test!(
@@ -450,6 +664,30 @@ mod tests {
                     bar.rs,
                 )
             -->
-        "
+        ", @r###"
+    {
+      "Ok": [
+        {
+          "name": null,
+          "range": [
+            2,
+            5
+          ],
+          "patterns": [
+            {
+              "name": null,
+              "value": "foo.rs",
+              "line": 6
+            },
+            {
+              "name": null,
+              "value": "bar.rs",
+              "line": 7
+            }
+          ]
+        }
+      ]
+    }
+    "###
     );
 }

@@ -18,7 +18,7 @@ pub trait Engine {
         patterns: impl IntoIterator<Item = impl AsRef<Path>>,
     ) -> impl Iterator<Item = Result<PathBuf, PathBuf>>;
 
-    /// Resolve a path relative to an absolute path.
+    /// Resolve a path to an absolute path.
     fn resolve(&self, path: impl AsRef<Path>) -> PathBuf;
 
     /// Check if a file has been ignored.
@@ -164,24 +164,8 @@ mod tests {
         let engine = crate::git(&repo, None, None);
         assert_eq!(engine.resolve(""), tempdir.path().canonicalize().unwrap());
 
-        let mut changes = engine.matches([""; 0]).collect::<Vec<_>>();
-        changes.sort();
-        insta::assert_debug_snapshot!(changes, @r###"
-        [
-            Ok(
-                "src/a.js",
-            ),
-            Ok(
-                "src/b.js",
-            ),
-        ]
-        "###);
-
-        insta::assert_debug_snapshot!(engine.check(&Path::new("src/a.js")), @r###"
-        Ok(
-            (),
-        )
-        "###);
+        insta::assert_compact_json_snapshot!(engine.matches([""; 0]).collect::<Vec<_>>(), @r###"[{"Ok": "src/a.js"}, {"Ok": "src/b.js"}]"###);
+        insta::assert_compact_json_snapshot!(engine.check(&Path::new("src/a.js")), @r###"{"Ok": null}"###);
     }
 
     #[test]
@@ -207,20 +191,8 @@ mod tests {
         let engine = crate::git(&repo, None, None);
         assert_eq!(engine.resolve(""), tempdir.path().canonicalize().unwrap());
 
-        insta::assert_debug_snapshot!(engine.matches(["";0]).collect::<Vec<_>>(), @r###"
-        [
-            Ok(
-                "src/a.js",
-            ),
-        ]
-        "###);
-        insta::assert_debug_snapshot!(engine.check(&Path::new("src/a.js")), @r###"
-        Err(
-            [
-                "Expected \"src/b.js\" to be modified because of \"then-change\" in \"src/a.js\" at line 3.",
-            ],
-        )
-        "###);
+        insta::assert_compact_json_snapshot!(engine.matches(["";0]).collect::<Vec<_>>(), @r###"[{"Ok": "src/a.js"}]"###);
+        insta::assert_compact_json_snapshot!(engine.check(&Path::new("src/a.js")), @r###"{"Err": ["Expected \"src/b.js\" to be modified because of \"then-change\" in \"src/a.js\" at line 3."]}"###);
     }
 
     #[test]
@@ -247,18 +219,8 @@ mod tests {
         let engine = crate::git(&repo, None, None);
         assert_eq!(engine.resolve(""), tempdir.path().canonicalize().unwrap());
 
-        insta::assert_debug_snapshot!(engine.matches(["";0]).collect::<Vec<_>>(), @r###"
-        [
-            Ok(
-                "src/a.js",
-            ),
-        ]
-        "###);
-        insta::assert_debug_snapshot!(engine.check(&Path::new("src/a.js")), @r###"
-        Ok(
-            (),
-        )
-        "###);
+        insta::assert_compact_json_snapshot!(engine.matches(["";0]).collect::<Vec<_>>(), @r###"[{"Ok": "src/a.js"}]"###);
+        insta::assert_compact_json_snapshot!(engine.check(&Path::new("src/a.js")), @r###"{"Ok": null}"###);
     }
 
     #[test]
@@ -293,24 +255,8 @@ mod tests {
         let engine = crate::git(&repo, None, None);
         assert_eq!(engine.resolve(""), tempdir.path().canonicalize().unwrap());
 
-        let mut changes = engine.matches([""; 0]).collect::<Vec<_>>();
-        changes.sort();
-        insta::assert_debug_snapshot!(changes, @r###"
-        [
-            Ok(
-                "src/a.js",
-            ),
-            Ok(
-                "src/b.js",
-            ),
-        ]
-        "###);
-
-        insta::assert_debug_snapshot!(engine.check( &Path::new("src/a.js")), @r###"
-        Ok(
-            (),
-        )
-        "###);
+        insta::assert_compact_json_snapshot!(engine.matches([""; 0]).collect::<Vec<_>>(), @r###"[{"Ok": "src/a.js"}, {"Ok": "src/b.js"}]"###);
+        insta::assert_compact_json_snapshot!(engine.check( &Path::new("src/a.js")), @r###"{"Ok": null}"###);
     }
 
     #[test]
@@ -346,26 +292,8 @@ mod tests {
         let engine = crate::git(&repo, None, None);
         assert_eq!(engine.resolve(""), tempdir.path().canonicalize().unwrap());
 
-        let mut changes = engine.matches([""; 0]).collect::<Vec<_>>();
-        changes.sort();
-        insta::assert_debug_snapshot!(changes, @r###"
-        [
-            Ok(
-                "src/a.js",
-            ),
-            Ok(
-                "src/b.js",
-            ),
-        ]
-        "###);
-
-        insta::assert_debug_snapshot!(engine.check(&Path::new("src/a.js")), @r###"
-        Err(
-            [
-                "Expected \"src/b.js\" to be modified because of \"then-change\" in \"src/a.js\" at line 3.",
-            ],
-        )
-        "###);
+        insta::assert_compact_json_snapshot!(engine.matches([""; 0]).collect::<Vec<_>>(), @r###"[{"Ok": "src/a.js"}, {"Ok": "src/b.js"}]"###);
+        insta::assert_compact_json_snapshot!(engine.check(&Path::new("src/a.js")), @r###"{"Err": ["Expected \"src/b.js\" to be modified because of \"then-change\" in \"src/a.js\" at line 3."]}"###);
     }
 
     #[test]
@@ -392,25 +320,13 @@ mod tests {
         let engine = crate::git(&repo, None, None);
         assert_eq!(engine.resolve(""), tempdir.path().canonicalize().unwrap());
 
-        let mut changes = engine.matches([""; 0]).collect::<Vec<_>>();
-        changes.sort();
-        insta::assert_debug_snapshot!(changes, @r###"
-        [
-            Ok(
-                "src/a.js",
-            ),
-            Ok(
-                "src/b.js",
-            ),
-        ]
-        "###);
-
-        insta::assert_debug_snapshot!(engine.check(&Path::new("src/a.js")), @r###"
-        Err(
-            [
-                "Could not find \"if-changed\" with name \"bar\" in \"src/b.js\" for \"then-change\" in \"src/a.js\" at line 3.",
-            ],
-        )
+        insta::assert_compact_json_snapshot!(engine.matches([""; 0]).collect::<Vec<_>>(), @r###"[{"Ok": "src/a.js"}, {"Ok": "src/b.js"}]"###);
+        insta::assert_compact_json_snapshot!(engine.check(&Path::new("src/a.js")), @r###"
+        {
+          "Err": [
+            "Could not find \"if-changed\" with name \"bar\" in \"src/b.js\" for \"then-change\" in \"src/a.js\" at line 3."
+          ]
+        }
         "###);
     }
 }
