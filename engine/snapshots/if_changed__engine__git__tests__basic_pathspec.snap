@@ -1,6 +1,6 @@
 ---
 source: engine/git.rs
-expression: "extract_pathspecs(b\"a\").map(|value|\n            value.to_str().unwrap()).collect::<Vec<_>>()"
+expression: "split_patterns(b\"a\").map(|value| value.to_str().unwrap()).collect::<Vec<_>>()"
 ---
 [
     "a",

@@ -11,14 +11,14 @@ Ok(
                 4,
             ),
             patterns: [
-                NamedPattern {
+                Pattern {
                     name: None,
-                    pattern: "foo.rs",
+                    value: "foo.rs",
                     line: 5,
                 },
-                NamedPattern {
+                Pattern {
                     name: None,
-                    pattern: "bar.rs",
+                    value: "bar.rs",
                     line: 6,
                 },
             ],
@@ -30,14 +30,14 @@ Ok(
                 11,
             ),
             patterns: [
-                NamedPattern {
+                Pattern {
                     name: None,
-                    pattern: "foo.rs",
+                    value: "foo.rs",
                     line: 11,
                 },
-                NamedPattern {
+                Pattern {
                     name: None,
-                    pattern: "bar.rs",
+                    value: "bar.rs",
                     line: 12,
                 },
             ],
@@ -49,14 +49,14 @@ Ok(
                 17,
             ),
             patterns: [
-                NamedPattern {
+                Pattern {
                     name: None,
-                    pattern: "foo.rs",
+                    value: "foo.rs",
                     line: 17,
                 },
-                NamedPattern {
+                Pattern {
                     name: None,
-                    pattern: "bar.rs",
+                    value: "bar.rs",
                     line: 18,
                 },
             ],
@@ -68,14 +68,14 @@ Ok(
                 22,
             ),
             patterns: [
-                NamedPattern {
+                Pattern {
                     name: None,
-                    pattern: "foo.rs",
+                    value: "foo.rs",
                     line: 22,
                 },
-                NamedPattern {
+                Pattern {
                     name: None,
-                    pattern: "bar.rs",
+                    value: "bar.rs",
                     line: 23,
                 },
             ],
@@ -87,14 +87,14 @@ Ok(
                 28,
             ),
             patterns: [
-                NamedPattern {
+                Pattern {
                     name: None,
-                    pattern: "foo.rs",
+                    value: "foo.rs",
                     line: 29,
                 },
-                NamedPattern {
+                Pattern {
                     name: None,
-                    pattern: "bar.rs",
+                    value: "bar.rs",
                     line: 30,
                 },
             ],

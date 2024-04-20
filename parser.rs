@@ -6,7 +6,7 @@ use std::{
 };
 
 use super::IfChangedBlock;
-use crate::NamedPattern;
+use crate::Pattern;
 
 const COMMENT_START_TOKENS: [char; 12] =
     ['/', '#', '-', '\'', ';', 'R', 'E', 'M', '!', '*', '<', '!'];
@@ -170,7 +170,7 @@ impl Parser {
         Ok(Some(id))
     }
 
-    fn parse_then_change(&mut self) -> Result<Option<(Vec<NamedPattern>, usize)>, Vec<String>> {
+    fn parse_then_change(&mut self) -> Result<Option<(Vec<Pattern>, usize)>, Vec<String>> {
         Ok(if self.find_and_eat("then-change") {
             // Note we grab the line number before parsing the paths. This is
             // important as changes in file references shouldn't require
@@ -184,7 +184,7 @@ impl Parser {
         })
     }
 
-    fn parse_then_change_paths(&mut self) -> Result<Vec<NamedPattern>, Vec<String>> {
+    fn parse_then_change_paths(&mut self) -> Result<Vec<Pattern>, Vec<String>> {
         let then_change_line = self.line.number;
         if !self.skip_whitespaces_and_eat("(") {
             return Err(vec![format!(
@@ -195,8 +195,8 @@ impl Parser {
 
         let mut related_paths = Vec::new();
 
-        let mut pathspec_buffer = String::new();
-        let mut pathspec_line = 0;
+        let mut pattern_buffer = String::new();
+        let mut pattern_line = 0;
         let mut right_paren_found = false;
         loop {
             // Skip over whitespaces and empty line comments.
@@ -214,17 +214,17 @@ impl Parser {
             }
 
             // At this point, the line is guaranteed to not be empty and within a comment.
-            if pathspec_line == 0 {
-                pathspec_line = self.line.number;
+            if pattern_line == 0 {
+                pattern_line = self.line.number;
             }
             match self.line.find('\\') {
                 Some(index) => {
-                    pathspec_buffer.push_str(self.line[..index].trim());
+                    pattern_buffer.push_str(self.line[..index].trim());
                     self.line.modify_with(|line| &line[index + 1..]);
                     continue;
                 }
                 None => {
-                    // If a continuation is not found, then detect either an
+                    // If a continuation is not found, then detect either a
                     // comma, ending parenthesis, or EOL.
                     let (index, len) = match self.line.find(',') {
                         Some(index) => (index, 1),
@@ -236,44 +236,42 @@ impl Parser {
                             None => (self.line.len(), 0),
                         },
                     };
-                    pathspec_buffer.push_str(self.line[..index].trim());
+                    pattern_buffer.push_str(self.line[..index].trim());
                     self.line.modify_with(|line| &line[index + len..]);
                 }
             }
 
-            let (pathspec, name) = match pathspec_buffer.split_once(':') {
+            let (pattern, name) = match pattern_buffer.split_once(':') {
                 // If the related path has the form "foo:bar", then
-                // `pathspec` will be "foo" and `name` will be "bar".
-                Some((pathspec, name)) => {
-                    (pathspec.trim().to_owned(), Some(name.trim().to_owned()))
-                }
+                // `pattern` will be "foo" and `name` will be "bar".
+                Some((pattern, name)) => (pattern.trim().to_owned(), Some(name.trim().to_owned())),
                 // Otherwise, `name` is none and the related path is
-                // `pathspec_buffer` itself.
+                // `pattern_buffer` itself.
                 None => {
-                    if pathspec_buffer.is_empty() {
+                    if pattern_buffer.is_empty() {
                         if right_paren_found {
                             break;
                         }
                         return Err(vec![format!(
-                            "Unexpected empty path at line {pathspec_line} for \"then-change\" at line {then_change_line} for \"{}\".",
+                            "Unexpected empty path at line {pattern_line} for \"then-change\" at line {then_change_line} for \"{}\".",
                             self.path.display()
                         )]);
                     }
-                    (pathspec_buffer.clone(), None)
+                    (pattern_buffer.clone(), None)
                 }
             };
 
-            related_paths.push(NamedPattern {
+            related_paths.push(Pattern {
                 name,
-                pattern: pathspec,
-                line: pathspec_line,
+                value: pattern,
+                line: pattern_line,
             });
             if right_paren_found {
                 break;
             }
 
-            pathspec_line = 0;
-            pathspec_buffer.clear();
+            pattern_line = 0;
+            pattern_buffer.clear();
         }
         Ok(related_paths)
     }

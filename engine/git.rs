@@ -1,4 +1,7 @@
-use std::path::{Path, PathBuf};
+use std::{
+    borrow::BorrowMut,
+    path::{Path, PathBuf},
+};
 
 use bstr::ByteSlice;
 use genawaiter::{rc::gen, yield_};
@@ -57,55 +60,70 @@ impl<'a> GitEngine<'a> {
     }
 
     /// Get the diff of a file, if any.
-    fn get_diff(&self, path: Option<&Path>) -> git2::Diff {
-        let mut options = git2::DiffOptions::new();
-        options.include_untracked(true);
-        if let Some(path) = path {
-            options.pathspec(path).disable_pathspec_match(true);
-        }
+    fn diff(&self, mut options: impl BorrowMut<git2::DiffOptions>) -> git2::Diff {
         match &self.to_tree {
             Some(to_tree) => self.repository.diff_tree_to_tree(
                 self.from_tree.as_ref(),
                 Some(to_tree),
-                Some(&mut options),
+                Some(options.borrow_mut()),
             ),
-            None => self
-                .repository
-                .diff_tree_to_workdir_with_index(self.from_tree.as_ref(), Some(&mut options)),
+            None => self.repository.diff_tree_to_workdir_with_index(
+                self.from_tree.as_ref(),
+                Some(options.borrow_mut().include_untracked(true)),
+            ),
         }
         .unwrap()
     }
 
     /// Get the patch of a file, if any.
-    fn get_patch(&self, path: &Path) -> Option<git2::Patch> {
-        git2::Patch::from_diff(&self.get_diff(Some(path)), 0)
-            .ok()
-            .flatten()
+    fn patch(&self, path: &Path) -> Option<git2::Patch> {
+        git2::Patch::from_diff(
+            &self.diff(
+                git2::DiffOptions::new()
+                    .pathspec(path)
+                    .disable_pathspec_match(true),
+            ),
+            0,
+        )
+        .ok()
+        .flatten()
     }
 }
 
 impl Engine for GitEngine<'_> {
-    fn paths(&self, mut spec: &str) -> impl Iterator<Item = PathBuf> {
-        if spec.starts_with('/') {
-            spec = &spec[1..];
-        }
-        gen!({
-            let pathspec = git2::Pathspec::new([spec]).unwrap();
-            let matches = pathspec
-                .match_workdir(self.repository, git2::PathspecFlags::DEFAULT)
-                .expect("bare repos are not supported");
-            for entry in matches.entries() {
-                yield_!(Path::new(&entry.to_os_str_lossy()).to_owned())
-            }
-        })
-        .into_iter()
-    }
+    fn matches(
+        &self,
+        patterns: impl IntoIterator<Item = impl AsRef<str>>,
+    ) -> impl Iterator<Item = Result<PathBuf, String>> {
+        let mut patterns = patterns
+            .into_iter()
+            .map(|pattern| {
+                let pattern = pattern.as_ref();
+                pattern.strip_prefix('/').unwrap_or(pattern).to_owned()
+            })
+            .collect::<Vec<_>>();
 
-    fn changed_paths(&self) -> impl Iterator<Item = PathBuf> {
+        // Need to reverse the pathspecs to match in `.gitignore` order.
+        patterns.reverse();
+
+        let diff = self.diff(git2::DiffOptions::new());
         gen!({
-            let diff = self.get_diff(None);
-            for delta in diff.deltas() {
-                yield_!(delta.new_file().path().unwrap().to_owned())
+            if patterns.is_empty() {
+                for delta in diff.deltas() {
+                    yield_!(Ok(delta.new_file().path().unwrap().to_owned()))
+                }
+                return;
+            }
+
+            let pathspec = git2::Pathspec::new(patterns).unwrap();
+            let matches = pathspec
+                .match_diff(&diff, git2::PathspecFlags::FIND_FAILURES)
+                .expect("bare repos are not supported");
+            for delta in matches.diff_entries() {
+                yield_!(Ok(delta.new_file().path().unwrap().to_owned()))
+            }
+            for entry in matches.failed_entries() {
+                yield_!(Err(entry.to_str_lossy().into_owned()))
             }
         })
         .into_iter()
@@ -128,7 +146,7 @@ impl Engine for GitEngine<'_> {
     }
 
     fn is_range_modified(&self, path: impl AsRef<Path>, range: (usize, usize)) -> bool {
-        let Some(patch) = self.get_patch(path.as_ref()) else {
+        let Some(patch) = self.patch(path.as_ref()) else {
             return false;
         };
         // Special case for untracked files. They are always considered modified.
@@ -179,19 +197,19 @@ fn ignore_pathspec(to_ref: Option<&str>, repository: &git2::Repository) -> Optio
         .peel_to_commit()
         .ok()?;
     let trailers = git2::message_trailers_bytes(commit.message_bytes()).ok()?;
-    let pathspecs = trailers
+    let patterns = trailers
         .iter()
         .filter(|(name, _)| name.to_ascii_lowercase() == IF_CHANGED_IGNORE_TRAILER)
-        .flat_map(|(_, value)| split_pathspecs(value))
+        .flat_map(|(_, value)| split_patterns(value))
         .collect::<Vec<_>>();
-    if pathspecs.is_empty() {
+    if patterns.is_empty() {
         None
     } else {
-        Some(git2::Pathspec::new(pathspecs).expect("Ignore-if-changed is invalid."))
+        Some(git2::Pathspec::new(patterns.iter().rev()).expect("Ignore-if-changed is invalid."))
     }
 }
 
-fn split_pathspecs(value: &[u8]) -> impl Iterator<Item = &[u8]> {
+fn split_patterns(value: &[u8]) -> impl Iterator<Item = &[u8]> {
     value
         .split_once_str(b"--")
         .unwrap_or((value, b""))
@@ -205,24 +223,24 @@ mod tests {
     use super::*;
     use crate::testing::git_test;
 
-    macro_rules! extract_pathspecs_test {
+    macro_rules! extract_pathspec_test {
         ($name:ident, $val:expr) => {
             #[test]
             fn $name() {
-                insta::assert_debug_snapshot!(split_pathspecs($val)
+                insta::assert_debug_snapshot!(split_patterns($val)
                     .map(|value| value.to_str().unwrap())
                     .collect::<Vec<_>>());
             }
         };
     }
 
-    extract_pathspecs_test!(test_basic_pathspec, b"a");
-    extract_pathspecs_test!(test_multiple_pathspec, b"a/b, b/c");
-    extract_pathspecs_test!(
+    extract_pathspec_test!(test_basic_pathspec, b"a");
+    extract_pathspec_test!(test_multiple_pathspec, b"a/b, b/c");
+    extract_pathspec_test!(
         test_multiple_pathspec_with_comment,
         b"a/b, b/c -- Hello world!"
     );
-    extract_pathspecs_test!(test_multiple_pathspec_with_empty_comment, b"a/b, b/c --");
+    extract_pathspec_test!(test_multiple_pathspec_with_empty_comment, b"a/b, b/c --");
 
     #[test]
     fn test_git() {
@@ -233,10 +251,12 @@ mod tests {
         let engine = git(&repo, None, None);
         assert_eq!(engine.resolve(""), tempdir.path().canonicalize().unwrap());
 
-        insta::assert_debug_snapshot!(engine.changed_paths().collect::<Vec<_>>(), @"[]");
-        insta::assert_debug_snapshot!(engine.paths("a").collect::<Vec<_>>(), @r###"
+        insta::assert_debug_snapshot!(engine.matches(["";0]).collect::<Vec<_>>(), @"[]");
+        insta::assert_debug_snapshot!(engine.matches(&["a"]).collect::<Vec<_>>(), @r###"
         [
-            "a",
+            Err(
+                "a",
+            ),
         ]
         "###);
         assert!(!engine.is_ignored(Path::new("a")));
@@ -251,61 +271,107 @@ mod tests {
         let engine = git(&repo, None, None);
         assert_eq!(engine.resolve(""), tempdir.path().canonicalize().unwrap());
 
-        insta::assert_debug_snapshot!(engine.changed_paths().collect::<Vec<_>>(), @r###"
+        insta::assert_debug_snapshot!(engine.matches(["";0]).collect::<Vec<_>>(), @r###"
         [
-            "a",
-            "b",
+            Ok(
+                "a",
+            ),
+            Ok(
+                "b",
+            ),
         ]
         "###);
-        insta::assert_debug_snapshot!(engine.paths("a").collect::<Vec<_>>(), @r###"
+        insta::assert_debug_snapshot!(engine.matches(&["a"]).collect::<Vec<_>>(), @r###"
         [
-            "a",
+            Ok(
+                "a",
+            ),
         ]
         "###);
         assert!(!engine.is_ignored(Path::new("a")));
     }
 
     #[test]
-    fn test_matched_paths() {
+    fn test_matches() {
         let (tempdir, repo) = git_test! {
-            "initial commit": ["a" => "a", "c/a" => "a", "c/b" => "b", "d/b" => "b"]
+            staged: ["a" => "a", "c/a" => "a", "c/b" => "b", "d/b" => "b"]
         };
 
         let engine = git(&repo, None, None);
         assert_eq!(engine.resolve(""), tempdir.path().canonicalize().unwrap());
 
-        insta::assert_debug_snapshot!(engine.paths("b").collect::<Vec<_>>(), @"[]");
-        insta::assert_debug_snapshot!(engine.paths("a").collect::<Vec<_>>(), @r###"
+        insta::assert_debug_snapshot!(engine.matches(&["b"]).collect::<Vec<_>>(), @r###"
         [
-            "a",
+            Err(
+                "b",
+            ),
         ]
         "###);
-        insta::assert_debug_snapshot!(engine.paths("/a").collect::<Vec<_>>(), @r###"
+        insta::assert_debug_snapshot!(engine.matches(&["a"]).collect::<Vec<_>>(), @r###"
         [
-            "a",
+            Ok(
+                "a",
+            ),
         ]
         "###);
-        insta::assert_debug_snapshot!(engine.paths("*/a").collect::<Vec<_>>(), @r###"
+        insta::assert_debug_snapshot!(engine.matches(&["/a"]).collect::<Vec<_>>(), @r###"
         [
-            "c/a",
+            Ok(
+                "a",
+            ),
         ]
         "###);
-        insta::assert_debug_snapshot!(engine.paths("*a").collect::<Vec<_>>(), @r###"
+        insta::assert_debug_snapshot!(engine.matches(&["*/a"]).collect::<Vec<_>>(), @r###"
         [
-            "a",
-            "c/a",
+            Ok(
+                "c/a",
+            ),
         ]
         "###);
-        insta::assert_debug_snapshot!(engine.paths("*/b").collect::<Vec<_>>(), @r###"
+        insta::assert_debug_snapshot!(engine.matches(&["*a"]).collect::<Vec<_>>(), @r###"
         [
-            "c/b",
-            "d/b",
+            Ok(
+                "a",
+            ),
+            Ok(
+                "c/a",
+            ),
+        ]
+        "###);
+        insta::assert_debug_snapshot!(engine.matches(&["*/b"]).collect::<Vec<_>>(), @r###"
+        [
+            Ok(
+                "c/b",
+            ),
+            Ok(
+                "d/b",
+            ),
+        ]
+        "###);
+        insta::assert_debug_snapshot!(engine.matches(&["c/*"]).collect::<Vec<_>>(), @r###"
+        [
+            Ok(
+                "c/a",
+            ),
+            Ok(
+                "c/b",
+            ),
+        ]
+        "###);
+        insta::assert_debug_snapshot!(engine.matches(&["c/*", "!c/b", "!c/c"]).collect::<Vec<_>>(), @r###"
+        [
+            Ok(
+                "c/a",
+            ),
+            Err(
+                "c/c",
+            ),
         ]
         "###);
     }
 
     #[test]
-    fn test_changed_paths() {
+    fn test_changes() {
         let (tempdir, repo) = git_test! {
             "initial commit": ["a" => "a", "c/a" => "a", "c/b" => "b", "d/b" => "b"]
             staged: ["a" => "b"]
@@ -315,18 +381,22 @@ mod tests {
         let engine = git(&repo, None, None);
         assert_eq!(engine.resolve(""), tempdir.path().canonicalize().unwrap());
 
-        let mut changed_paths = engine.changed_paths().collect::<Vec<_>>();
-        changed_paths.sort();
-        insta::assert_debug_snapshot!(changed_paths, @r###"
+        let mut changes = engine.matches([""; 0]).collect::<Vec<_>>();
+        changes.sort();
+        insta::assert_debug_snapshot!(changes, @r###"
         [
-            "a",
-            "c/a",
+            Ok(
+                "a",
+            ),
+            Ok(
+                "c/a",
+            ),
         ]
         "###);
     }
 
     #[test]
-    fn test_changed_paths_staged_only() {
+    fn test_changes_staged_only() {
         let (tempdir, repo) = git_test! {
             "initial commit": ["a" => "a", "c/a" => "a", "c/b" => "b", "d/b" => "b"]
             staged: ["a" => "b"]
@@ -335,15 +405,17 @@ mod tests {
         let engine = git(&repo, None, None);
         assert_eq!(engine.resolve(""), tempdir.path().canonicalize().unwrap());
 
-        insta::assert_debug_snapshot!(engine.changed_paths().collect::<Vec<_>>(), @r###"
+        insta::assert_debug_snapshot!(engine.matches(["";0]).collect::<Vec<_>>(), @r###"
         [
-            "a",
+            Ok(
+                "a",
+            ),
         ]
         "###);
     }
 
     #[test]
-    fn test_changed_paths_working_only() {
+    fn test_changes_working_only() {
         let (tempdir, repo) = git_test! {
             "initial commit": ["a" => "a", "c/a" => "a", "c/b" => "b", "d/b" => "b"]
             working: ["a" => "b"]
@@ -352,9 +424,11 @@ mod tests {
         let engine = git(&repo, None, None);
         assert_eq!(engine.resolve(""), tempdir.path().canonicalize().unwrap());
 
-        insta::assert_debug_snapshot!(engine.changed_paths().collect::<Vec<_>>(), @r###"
+        insta::assert_debug_snapshot!(engine.matches(["";0]).collect::<Vec<_>>(), @r###"
         [
-            "a",
+            Ok(
+                "a",
+            ),
         ]
         "###);
     }

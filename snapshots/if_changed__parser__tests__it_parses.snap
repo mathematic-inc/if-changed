@@ -11,9 +11,9 @@ Ok(
                 4,
             ),
             patterns: [
-                NamedPattern {
+                Pattern {
                     name: None,
-                    pattern: "foo.rs",
+                    value: "foo.rs",
                     line: 4,
                 },
             ],
@@ -27,9 +27,9 @@ Ok(
                 8,
             ),
             patterns: [
-                NamedPattern {
+                Pattern {
                     name: None,
-                    pattern: "foo.rs",
+                    value: "foo.rs",
                     line: 8,
                 },
             ],
