@@ -1,8 +1,0 @@
----
-source: engine/git.rs
-expression: "split_patterns(b\"a/b, b/c\").map(|value|\n            value.to_str().unwrap()).collect::<Vec<_>>()"
----
-[
-    "a/b",
-    "b/c",
-]
