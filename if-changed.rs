@@ -1,12 +1,14 @@
 mod engine;
 mod parser;
 
+use std::path::PathBuf;
+
 pub use engine::{git, Engine};
 
 #[derive(Debug, Clone)]
 struct Pattern {
     pub name: Option<String>,
-    pub value: String,
+    pub value: PathBuf,
     pub line: usize,
 }
 
