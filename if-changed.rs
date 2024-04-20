@@ -6,6 +6,7 @@ use std::path::PathBuf;
 pub use engine::{git, Engine};
 
 #[derive(Debug, Clone)]
+#[cfg_attr(test, derive(serde::Serialize))]
 struct Pattern {
     pub name: Option<String>,
     pub value: PathBuf,
@@ -13,6 +14,7 @@ struct Pattern {
 }
 
 #[derive(Debug, Clone)]
+#[cfg_attr(test, derive(serde::Serialize))]
 struct IfChangedBlock {
     pub name: Option<String>,
     pub range: (usize, usize),

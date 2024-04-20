@@ -229,21 +229,22 @@ mod tests {
     use crate::testing::git_test;
 
     macro_rules! extract_pathspec_test {
-        ($name:ident, $val:expr) => {
+        ($name:ident, $val:expr, @$exp:literal) => {
             #[test]
             fn $name() {
-                insta::assert_debug_snapshot!(split_patterns($val).collect::<Vec<_>>());
+                insta::assert_compact_json_snapshot!(split_patterns($val)
+                    .collect::<Vec<_>>(), @$exp);
             }
         };
     }
 
-    extract_pathspec_test!(test_basic_pathspec, b"a");
-    extract_pathspec_test!(test_multiple_pathspec, b"a/b, b/c");
+    extract_pathspec_test!(test_basic_pathspec, b"a", @r###"["a"]"###);
+    extract_pathspec_test!(test_multiple_pathspec, b"a/b, b/c", @r###"["a/b", "b/c"]"###);
     extract_pathspec_test!(
         test_multiple_pathspec_with_comment,
-        b"a/b, b/c -- Hello world!"
+        b"a/b, b/c -- Hello world!", @r###"["a/b", "b/c"]"###
     );
-    extract_pathspec_test!(test_multiple_pathspec_with_empty_comment, b"a/b, b/c --");
+    extract_pathspec_test!(test_multiple_pathspec_with_empty_comment, b"a/b, b/c --", @r###"["a/b", "b/c"]"###);
 
     #[test]
     fn test_git() {
@@ -254,14 +255,8 @@ mod tests {
         let engine = git(&repo, None, None);
         assert_eq!(engine.resolve(""), tempdir.path().canonicalize().unwrap());
 
-        insta::assert_debug_snapshot!(engine.matches(["";0]).collect::<Vec<_>>(), @"[]");
-        insta::assert_debug_snapshot!(engine.matches(&["a"]).collect::<Vec<_>>(), @r###"
-        [
-            Err(
-                "a",
-            ),
-        ]
-        "###);
+        insta::assert_compact_json_snapshot!(engine.matches(["";0]).collect::<Vec<_>>(), @"[]");
+        insta::assert_compact_json_snapshot!(engine.matches(&["a"]).collect::<Vec<_>>(), @r###"[{"Err": "a"}]"###);
         assert!(!engine.is_ignored(Path::new("a")));
     }
 
@@ -274,23 +269,8 @@ mod tests {
         let engine = git(&repo, None, None);
         assert_eq!(engine.resolve(""), tempdir.path().canonicalize().unwrap());
 
-        insta::assert_debug_snapshot!(engine.matches(["";0]).collect::<Vec<_>>(), @r###"
-        [
-            Ok(
-                "a",
-            ),
-            Ok(
-                "b",
-            ),
-        ]
-        "###);
-        insta::assert_debug_snapshot!(engine.matches(&["a"]).collect::<Vec<_>>(), @r###"
-        [
-            Ok(
-                "a",
-            ),
-        ]
-        "###);
+        insta::assert_compact_json_snapshot!(engine.matches(["";0]).collect::<Vec<_>>(), @r###"[{"Ok": "a"}, {"Ok": "b"}]"###);
+        insta::assert_compact_json_snapshot!(engine.matches(&["a"]).collect::<Vec<_>>(), @r###"[{"Ok": "a"}]"###);
         assert!(!engine.is_ignored(Path::new("a")));
     }
 
@@ -303,74 +283,14 @@ mod tests {
         let engine = git(&repo, None, None);
         assert_eq!(engine.resolve(""), tempdir.path().canonicalize().unwrap());
 
-        insta::assert_debug_snapshot!(engine.matches(&["b"]).collect::<Vec<_>>(), @r###"
-        [
-            Err(
-                "b",
-            ),
-        ]
-        "###);
-        insta::assert_debug_snapshot!(engine.matches(&["a"]).collect::<Vec<_>>(), @r###"
-        [
-            Ok(
-                "a",
-            ),
-        ]
-        "###);
-        insta::assert_debug_snapshot!(engine.matches(&["/a"]).collect::<Vec<_>>(), @r###"
-        [
-            Ok(
-                "a",
-            ),
-        ]
-        "###);
-        insta::assert_debug_snapshot!(engine.matches(&["*/a"]).collect::<Vec<_>>(), @r###"
-        [
-            Ok(
-                "c/a",
-            ),
-        ]
-        "###);
-        insta::assert_debug_snapshot!(engine.matches(&["*a"]).collect::<Vec<_>>(), @r###"
-        [
-            Ok(
-                "a",
-            ),
-            Ok(
-                "c/a",
-            ),
-        ]
-        "###);
-        insta::assert_debug_snapshot!(engine.matches(&["*/b"]).collect::<Vec<_>>(), @r###"
-        [
-            Ok(
-                "c/b",
-            ),
-            Ok(
-                "d/b",
-            ),
-        ]
-        "###);
-        insta::assert_debug_snapshot!(engine.matches(&["c/*"]).collect::<Vec<_>>(), @r###"
-        [
-            Ok(
-                "c/a",
-            ),
-            Ok(
-                "c/b",
-            ),
-        ]
-        "###);
-        insta::assert_debug_snapshot!(engine.matches(&["c/*", "!c/b", "!c/c"]).collect::<Vec<_>>(), @r###"
-        [
-            Ok(
-                "c/a",
-            ),
-            Err(
-                "c/c",
-            ),
-        ]
-        "###);
+        insta::assert_compact_json_snapshot!(engine.matches(&["b"]).collect::<Vec<_>>(), @r###"[{"Err": "b"}]"###);
+        insta::assert_compact_json_snapshot!(engine.matches(&["a"]).collect::<Vec<_>>(), @r###"[{"Ok": "a"}]"###);
+        insta::assert_compact_json_snapshot!(engine.matches(&["/a"]).collect::<Vec<_>>(), @r###"[{"Ok": "a"}]"###);
+        insta::assert_compact_json_snapshot!(engine.matches(&["*/a"]).collect::<Vec<_>>(), @r###"[{"Ok": "c/a"}]"###);
+        insta::assert_compact_json_snapshot!(engine.matches(&["*a"]).collect::<Vec<_>>(), @r###"[{"Ok": "a"}, {"Ok": "c/a"}]"###);
+        insta::assert_compact_json_snapshot!(engine.matches(&["*/b"]).collect::<Vec<_>>(), @r###"[{"Ok": "c/b"}, {"Ok": "d/b"}]"###);
+        insta::assert_compact_json_snapshot!(engine.matches(&["c/*"]).collect::<Vec<_>>(), @r###"[{"Ok": "c/a"}, {"Ok": "c/b"}]"###);
+        insta::assert_compact_json_snapshot!(engine.matches(&["c/*", "!c/b", "!c/c"]).collect::<Vec<_>>(), @r###"[{"Ok": "c/a"}, {"Err": "c/c"}]"###);
     }
 
     #[test]
@@ -384,18 +304,7 @@ mod tests {
         let engine = git(&repo, None, None);
         assert_eq!(engine.resolve(""), tempdir.path().canonicalize().unwrap());
 
-        let mut changes = engine.matches([""; 0]).collect::<Vec<_>>();
-        changes.sort();
-        insta::assert_debug_snapshot!(changes, @r###"
-        [
-            Ok(
-                "a",
-            ),
-            Ok(
-                "c/a",
-            ),
-        ]
-        "###);
+        insta::assert_compact_json_snapshot!(engine.matches([""; 0]).collect::<Vec<_>>(), @r###"[{"Ok": "a"}, {"Ok": "c/a"}]"###);
     }
 
     #[test]
@@ -408,13 +317,7 @@ mod tests {
         let engine = git(&repo, None, None);
         assert_eq!(engine.resolve(""), tempdir.path().canonicalize().unwrap());
 
-        insta::assert_debug_snapshot!(engine.matches(["";0]).collect::<Vec<_>>(), @r###"
-        [
-            Ok(
-                "a",
-            ),
-        ]
-        "###);
+        insta::assert_compact_json_snapshot!(engine.matches(["";0]).collect::<Vec<_>>(), @r###"[{"Ok": "a"}]"###);
     }
 
     #[test]
@@ -427,13 +330,7 @@ mod tests {
         let engine = git(&repo, None, None);
         assert_eq!(engine.resolve(""), tempdir.path().canonicalize().unwrap());
 
-        insta::assert_debug_snapshot!(engine.matches(["";0]).collect::<Vec<_>>(), @r###"
-        [
-            Ok(
-                "a",
-            ),
-        ]
-        "###);
+        insta::assert_compact_json_snapshot!(engine.matches(["";0]).collect::<Vec<_>>(), @r###"[{"Ok": "a"}]"###);
     }
 
     #[test]
