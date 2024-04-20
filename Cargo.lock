@@ -244,6 +244,7 @@ dependencies = [
  "git2",
  "indoc",
  "insta",
+ "serde",
  "tempfile",
 ]
 
@@ -262,6 +263,7 @@ dependencies = [
  "console",
  "lazy_static",
  "linked-hash-map",
+ "serde",
  "similar",
 ]
 
