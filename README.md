@@ -11,16 +11,30 @@ cargo install if-changed
 ## Usage
 
 ```bash
-Usage: if-changed [OPTIONS] [PATHSPEC]...
+Usage: if-changed [OPTIONS] [PATTERNS]...
 
 Arguments:
-  [PATHSPEC]...  Git pathspec defining the set of files to check. By default, this will be all changed files between revisions
+  [PATTERNS]...
+          Git patterns defining the set of files to check. By default, this will be all changed files between revisions.
+
+          This list follows the same rules as [`.gitignore`](https://git-scm.com/docs/gitignore) except relative paths/patterns are always matched against the repository root, if the paths/patterns don't contain `/`. In particular, a leading `!` before a pattern will reinclude the pattern if it was excluded by a previous pattern.
 
 Options:
-      --from-ref <FROM_REF>  The revision to compare against. By default, HEAD is used
-      --to-ref <TO_REF>      The revision to compare with. By default, the current working tree is used
-  -h, --help                 Print help
-  -V, --version              Print version
+      --from-ref <FROM_REF>
+          The revision to compare against. By default, HEAD is used
+
+          [env: PRE_COMMIT_FROM_REF=]
+
+      --to-ref <TO_REF>
+          The revision to compare with. By default, the current working tree is used
+
+          [env: PRE_COMMIT_TO_REF=]
+
+  -h, --help
+          Print help (see a summary with '-h')
+
+  -V, --version
+          Print version
 ```
 
 ### Motivating example
@@ -45,7 +59,7 @@ const enum ErrorCode {
 }
 ```
 
-Typically, to synchronize these enums, a common approach is to extract the enum values into a "source-of-truth" file. This then often requires significant effort to generate the enums through the build system or a script and to get everything working correctly. If the job is a one-off, the costs heavily outweigh the benefits.
+Typically, to synchronize these enums, a common approach is to extract the enum values into a "source-of-truth" file. This often requires significant effort to generate the enums using the build system or a script, and to ensure everything works correctly. If the job is a one-off, the costs heavily outweigh the benefits.
 
 This is where `if-changed` comes in. Instead of the above, suppose we have:
 
@@ -89,9 +103,9 @@ Once this is commited, the next time `lib.rs` (or `lib.ts`) is changed in the li
 > +// then-change(lib.rs)
 > ```
 
-### Pathspec list
+### File lists
 
-If a block needs to specify several files, you can use commas and/or newlines to separate multiple paths/pathspecs. For example,
+If a block needs to specify several files, you can use commas and/or newlines to separate paths/patterns. For example,
 
 ```c
 // then-change(foo/bar, baz)
@@ -104,7 +118,7 @@ If a block needs to specify several files, you can use commas and/or newlines to
 // )
 ```
 
-These pathspecs follow the same rules as [`.gitignore` pathspecs](https://git-scm.com/docs/gitignore#_pattern_format) except relative pathspecs are always matched against the file it's in, even if the pathspec doesn't contain `/`. Use a beginning `/` to match the pathspec against the repository root, e.g. `/foo/bar`.
+These lists follow the same rules as [`.gitignore`](https://git-scm.com/docs/gitignore), with the exception that relative paths/patterns are always matched against the file in which they are written, even if the paths/patterns don't contain `/`. Use a starting `/` to match the pattern against the repository root, e.g. `/*/bar`.
 
 ### Long paths
 
@@ -119,18 +133,18 @@ If a path is too long, you can use a shell continuation `\` to split it across m
 
 ### Disabling `if-changed`
 
-To disable `if-changed` on a file for a commit, add `Ignore-if-changed: <pathspec>, ... -- [REASON]` to the commit footer where `<pathspec>` is the file path. In general, `<pathspec>` can be any pattern allowed by [fnmatch](https://man7.org/linux/man-pages/man3/fnmatch.3.html).
+To disable `if-changed` for a specific file during a commit, add `Ignore-if-changed: <path>, ... -- [REASON]` to the commit footer. Here, `<path>` should be the file path. In general, `<path>` can be any pattern allowed by [fnmatch](https://man7.org/linux/man-pages/man3/fnmatch.3.html).
 
 > [!NOTE]
 >
 > If you want to disable `if-changed` when diffing the working tree, you can execute `if-changed` with the following:
 >
 > ```bash
-> if-changed !<pathspec> '*'
+> if-changed '*' !<path-or-pattern>
 > ```
 >
-> where `<pathspec>` is the file path you want to ignore. **It's important that `!<pathspec>` is first** (follows from `.gitignore` rules). Again, `<pathspec>` can be any pattern.
+> where `<path-or-pattern>` is the path/pattern you want to ignore.
 
 ## Contributing
 
-Contributions to `if-changed` are welcome! Please submit a pull request or create an issue on the GitHub repository.
+Contributions to `if-changed` are welcome! Please submit a pull request or create an issue in the GitHub repository.

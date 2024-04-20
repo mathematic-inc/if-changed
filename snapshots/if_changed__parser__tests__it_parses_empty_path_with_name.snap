@@ -13,11 +13,11 @@ Ok(
                 4,
             ),
             patterns: [
-                NamedPattern {
+                Pattern {
                     name: Some(
                         "b",
                     ),
-                    pattern: "",
+                    value: "",
                     line: 4,
                 },
             ],
@@ -31,11 +31,11 @@ Ok(
                 8,
             ),
             patterns: [
-                NamedPattern {
+                Pattern {
                     name: Some(
                         "a",
                     ),
-                    pattern: "",
+                    value: "",
                     line: 8,
                 },
             ],
