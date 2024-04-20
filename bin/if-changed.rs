@@ -19,7 +19,7 @@ pub struct Cli {
     ///
     /// This list follows the same rules as
     /// [`.gitignore`](https://git-scm.com/docs/gitignore) except relative
-    /// paths/patterns are always matched against the repository root, if the
+    /// paths/patterns are always matched against the repository root, even if the
     /// paths/patterns don't contain `/`. In particular, a leading `!` before a
     /// pattern will reinclude the pattern if it was excluded by a previous
     /// pattern.
