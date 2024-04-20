@@ -1,6 +1,5 @@
 ---
 source: parser.rs
-assertion_line: 353
 expression: "Parser::new(file.path()).unwrap().collect::<Result<Vec<_>, _>>()"
 ---
 Ok(

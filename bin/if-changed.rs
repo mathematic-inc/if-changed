@@ -21,9 +21,17 @@ pub struct Cli {
     #[arg(long, env = "PRE_COMMIT_TO_REF")]
     pub to_ref: Option<String>,
 
-    /// Git pathspec defining the set of files to check. By default, this will be all changed files between revisions.
+    /// Git patterns defining the set of files to check. By default, this will
+    /// be all changed files between revisions.
+    ///
+    /// This list follows the same rules as
+    /// [`.gitignore`](https://git-scm.com/docs/gitignore) except relative
+    /// paths/patterns are always matched against the repository root, if the
+    /// paths/patterns don't contain `/`. In particular, a leading `!` before a
+    /// pattern will reinclude the pattern if it was excluded by a previous
+    /// pattern.
     #[arg()]
-    pub pathspec: Vec<String>,
+    pub patterns: Vec<String>,
 }
 
 fn main() -> ExitCode {
@@ -31,10 +39,12 @@ fn main() -> ExitCode {
 
     let repository = git2::Repository::open_from_env().unwrap();
     let engine = git(&repository, cli.from_ref.as_deref(), cli.to_ref.as_deref());
-    let pathspec = git2::Pathspec::new(&cli.pathspec).unwrap();
     let mut has_error = false;
-    for path in engine.changed_paths() {
-        if !pathspec.matches_path(&path, Default::default()) || engine.is_ignored(&path) {
+    for result in engine.matches(cli.patterns) {
+        let Ok(path) = result else {
+            continue;
+        };
+        if engine.is_ignored(&path) {
             continue;
         }
         if let Err(errors) = engine.check(path) {

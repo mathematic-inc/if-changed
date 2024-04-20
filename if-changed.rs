@@ -1,13 +1,12 @@
-mod checker;
 mod engine;
 mod parser;
 
 pub use engine::{git, Engine};
 
 #[derive(Debug, Clone)]
-struct NamedPattern {
+struct Pattern {
     pub name: Option<String>,
-    pub pattern: String,
+    pub value: String,
     pub line: usize,
 }
 
@@ -15,7 +14,7 @@ struct NamedPattern {
 struct IfChangedBlock {
     pub name: Option<String>,
     pub range: (usize, usize),
-    pub patterns: Vec<NamedPattern>,
+    pub patterns: Vec<Pattern>,
 }
 
 #[cfg(test)]

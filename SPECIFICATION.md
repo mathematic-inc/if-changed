@@ -6,21 +6,21 @@ This document defines the syntax of `if-changed` in ABNF in accordance with [RFC
 if-changed = "if-changed" ["(" <name> ")"]
 name       = 1*name-char
 
-then-change         = "then-change" "(" [LF] named-pathspec-list [LF] ")"
-named-pathspec-list = named-pathspec *(delimiter named-pathspec)
-named-pathspec      = pathspec [":" name]
+then-change        = "then-change" "(" [LF] named-pattern-list [LF] ")"
+named-pattern-list = named-pattern *(delimiter named-pattern)
+named-pattern      = pattern [":" name]
 
-pathspec          = rooted-pathspec / relative-pathspec
-rooted-pathspec   = "/" relative-pathspec
-relative-pathspec = 1*pathspec-char *(continuation *pathspec-char)
+pattern          = rooted-pattern / relative-pattern
+rooted-pattern   = "/" relative-pattern
+relative-pattern = 1*pattern-char *(continuation *pattern-char)
 
 continuation = backslash LF
 delimiter    = "," / LF
 
 name-char     = %x00-%x28 / %x2A-%x10FFFF ; Any character except ")"
-pathspec-char = %x00-%x09                 ; Skipping line feed
+pattern-char  = %x00-%x09                 ; Skipping line feed
               / %x0B-%x2B                 ; Skipping ","
               / %x2D-%x5B                 ; Skipping "\"
               / %x5D-%x10FFFF
-backslash     = %x5C                                              ; "\"
+backslash     = %x5C                      ; "\"
 ```
