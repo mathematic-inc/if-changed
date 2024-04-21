@@ -1,9 +1,11 @@
 mod engine;
 mod parser;
 
+pub mod testing;
+
 use std::path::PathBuf;
 
-pub use engine::{git, Engine};
+pub use engine::{Engine, GitEngine};
 
 #[derive(Debug, Clone)]
 #[cfg_attr(test, derive(serde::Serialize))]
@@ -20,6 +22,3 @@ struct IfChangedBlock {
     pub range: (usize, usize),
     pub patterns: Vec<Pattern>,
 }
-
-#[cfg(test)]
-mod testing;

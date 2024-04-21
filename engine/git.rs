@@ -11,46 +11,61 @@ use super::Engine;
 
 const IF_CHANGED_IGNORE_TRAILER: &[u8] = b"ignore-if-changed";
 
-pub fn git<'repo>(
-    repository: &'repo git2::Repository,
-    from_ref: Option<&str>,
-    to_ref: Option<&str>,
-) -> impl Engine + 'repo {
-    GitEngine::new(repository, from_ref, to_ref)
-}
-
-struct GitEngine<'a> {
+pub struct GitEngine<'repo> {
     ignore_pathspec: Option<git2::Pathspec>,
-    repository: &'a git2::Repository,
-    from_tree: Option<git2::Tree<'a>>,
-    to_tree: Option<git2::Tree<'a>>,
+    repository: &'repo git2::Repository,
+    from_tree: Option<git2::Tree<'repo>>,
+    to_tree: Option<git2::Tree<'repo>>,
 }
 
-impl<'a> GitEngine<'a> {
-    fn new(repository: &'a git2::Repository, from_ref: Option<&str>, to_ref: Option<&str>) -> Self {
+impl<'repo> GitEngine<'repo> {
+    #[allow(clippy::new_ret_no_self)]
+    pub fn new(
+        repository: &'repo git2::Repository,
+        from_ref: Option<&str>,
+        to_ref: Option<&str>,
+    ) -> impl Engine + 'repo {
         let ignore_pathspec = ignore_pathspec(to_ref, repository);
 
-        let from_tree = match from_ref {
-            Some(from_ref) => Some(
+        let (from_tree, to_tree) = match (from_ref, to_ref) {
+            (None, None) => (
                 repository
-                    .revparse_single(from_ref)
-                    .expect("from_ref is not a valid revision")
-                    .peel_to_tree()
-                    .expect("from_ref does not point to a tree"),
+                    .head()
+                    .ok()
+                    .map(|head| head.peel_to_tree().unwrap()),
+                None,
             ),
-            None => repository
-                .head()
-                .map(|head| head.peel_to_tree().unwrap())
-                .ok(),
+            (None, Some(to_ref)) => {
+                let to_commit = repository
+                    .revparse_single(to_ref)
+                    .expect("to_ref is not a valid revision")
+                    .peel_to_commit()
+                    .expect("to_ref does not point to a commit");
+                (
+                    to_commit
+                        .parents()
+                        .next()
+                        .map(|commit| commit.tree().unwrap()),
+                    Some(to_commit.tree().unwrap()),
+                )
+            }
+            (Some(from_ref), to_ref) => (
+                Some(
+                    repository
+                        .revparse_single(from_ref)
+                        .expect("to_ref is not a valid revision")
+                        .peel_to_tree()
+                        .expect("to_ref does not point to a tree"),
+                ),
+                to_ref.map(|to_ref| {
+                    repository
+                        .revparse_single(to_ref)
+                        .expect("to_ref is not a valid revision")
+                        .peel_to_tree()
+                        .expect("to_ref does not point to a tree")
+                }),
+            ),
         };
-
-        let to_tree = to_ref.map(|to_ref| {
-            repository
-                .revparse_single(to_ref)
-                .unwrap()
-                .peel_to_tree()
-                .unwrap()
-        });
 
         Self {
             ignore_pathspec,
@@ -252,7 +267,7 @@ mod tests {
             "initial commit": ["a" => "a", "b" => "b"]
         };
 
-        let engine = git(&repo, None, None);
+        let engine = GitEngine::new(&repo, None, None);
         assert_eq!(engine.resolve(""), tempdir.path().canonicalize().unwrap());
 
         insta::assert_compact_json_snapshot!(engine.matches(["";0]).collect::<Vec<_>>(), @"[]");
@@ -266,7 +281,7 @@ mod tests {
             staged: ["a" => "a", "b" => "b"]
         };
 
-        let engine = git(&repo, None, None);
+        let engine = GitEngine::new(&repo, None, None);
         assert_eq!(engine.resolve(""), tempdir.path().canonicalize().unwrap());
 
         insta::assert_compact_json_snapshot!(engine.matches(["";0]).collect::<Vec<_>>(), @r###"[{"Ok": "a"}, {"Ok": "b"}]"###);
@@ -280,7 +295,7 @@ mod tests {
             staged: ["a" => "a", "c/a" => "a", "c/b" => "b", "d/b" => "b"]
         };
 
-        let engine = git(&repo, None, None);
+        let engine = GitEngine::new(&repo, None, None);
         assert_eq!(engine.resolve(""), tempdir.path().canonicalize().unwrap());
 
         insta::assert_compact_json_snapshot!(engine.matches(&["b"]).collect::<Vec<_>>(), @r###"[{"Err": "b"}]"###);
@@ -301,7 +316,7 @@ mod tests {
             working: ["c/a" => "b"]
         };
 
-        let engine = git(&repo, None, None);
+        let engine = GitEngine::new(&repo, None, None);
         assert_eq!(engine.resolve(""), tempdir.path().canonicalize().unwrap());
 
         insta::assert_compact_json_snapshot!(engine.matches([""; 0]).collect::<Vec<_>>(), @r###"[{"Ok": "a"}, {"Ok": "c/a"}]"###);
@@ -314,7 +329,7 @@ mod tests {
             staged: ["a" => "b"]
         };
 
-        let engine = git(&repo, None, None);
+        let engine = GitEngine::new(&repo, None, None);
         assert_eq!(engine.resolve(""), tempdir.path().canonicalize().unwrap());
 
         insta::assert_compact_json_snapshot!(engine.matches(["";0]).collect::<Vec<_>>(), @r###"[{"Ok": "a"}]"###);
@@ -327,7 +342,7 @@ mod tests {
             working: ["a" => "b"]
         };
 
-        let engine = git(&repo, None, None);
+        let engine = GitEngine::new(&repo, None, None);
         assert_eq!(engine.resolve(""), tempdir.path().canonicalize().unwrap());
 
         insta::assert_compact_json_snapshot!(engine.matches(["";0]).collect::<Vec<_>>(), @r###"[{"Ok": "a"}]"###);
@@ -340,7 +355,7 @@ mod tests {
             "second commit": ["a" => "b"]
         };
 
-        let engine = git(&repo, Some("HEAD~1"), Some("HEAD"));
+        let engine = GitEngine::new(&repo, Some("HEAD~1"), Some("HEAD"));
         assert_eq!(engine.resolve(""), tempdir.path().canonicalize().unwrap());
 
         assert!(!engine.is_ignored(Path::new("a")));
@@ -354,7 +369,7 @@ mod tests {
             "second commit\n\nignore-if-changed: c/a": ["a" => "b"]
         };
 
-        let engine = git(&repo, Some("HEAD~1"), Some("HEAD"));
+        let engine = GitEngine::new(&repo, Some("HEAD~1"), Some("HEAD"));
         assert_eq!(engine.resolve(""), tempdir.path().canonicalize().unwrap());
 
         assert!(!engine.is_ignored(Path::new("a")));

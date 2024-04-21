@@ -1,5 +1,10 @@
 # `if-changed`
 
+[![crates.io](https://img.shields.io/crates/v/if-changed?style=flat-square)](https://crates.io/crates/if-changed)
+[![license](https://img.shields.io/crates/l/if-changed?style=flat-square)](https://github.com/mathematic-inc/if-changed)
+[![ci](https://img.shields.io/github/actions/workflow/status/mathematic-inc/if-changed/ci.yaml?label=ci&style=flat-square)](https://github.com/mathematic-inc/if-changed/actions/workflows/ci.yaml)
+[![docs](https://img.shields.io/docsrs/if-changed?style=flat-square)](https://docs.rs/if-changed/latest/if_changed/index.html)
+
 `if-changed` is a command-line utility that checks for `"if-changed"` and `"then-change"` comments in a repository diff and errors if dependent files need changes.
 
 ## Installation
