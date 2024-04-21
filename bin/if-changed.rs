@@ -1,3 +1,5 @@
+#![cfg_attr(coverage_nightly, feature(coverage_attribute))]
+
 use std::process::ExitCode;
 
 use clap::Parser as ClapParser;
@@ -48,6 +50,7 @@ fn run(cli: Cli, repository: git2::Repository) -> impl Iterator<Item = String> {
     .into_iter()
 }
 
+#[cfg_attr(coverage_nightly, coverage(off))]
 fn main() -> ExitCode {
     let mut has_error = false;
     let repository = match git2::Repository::open_from_env() {
@@ -124,6 +127,72 @@ mod tests {
             to_ref: Some("HEAD".into()),
             patterns: vec![],
         }, repository).collect::<Vec<_>>(), @r###"["Expected \"b.ts\" to be modified because of \"then-change\" in \"a.ts\" at line 4."]"###);
+    }
+
+    #[test]
+    fn test_run_commit_footer() {
+        let (tempdir, _repo) = git_test! {
+            "initial commit\n\nignore-if-changed: a.ts": [
+                "a.ts" => indoc! {"
+                    const enum G {
+                        // if-changed
+                        A,
+                        // then-change(b.ts)
+                    }
+                "}
+            ]
+        };
+
+        let repository = git2::Repository::open(tempdir.path()).unwrap();
+        insta::assert_compact_json_snapshot!(run(Cli {
+            from_ref: None,
+            to_ref: Some("HEAD".into()),
+            patterns: vec![],
+        }, repository).collect::<Vec<_>>(), @"[]");
+    }
+
+    #[test]
+    fn test_run_commit_footer_with_reason() {
+        let (tempdir, _repo) = git_test! {
+            "initial commit\n\nignore-if-changed: a.ts -- idky": [
+                "a.ts" => indoc! {"
+                    const enum G {
+                        // if-changed
+                        A,
+                        // then-change(b.ts)
+                    }
+                "}
+            ]
+        };
+
+        let repository = git2::Repository::open(tempdir.path()).unwrap();
+        insta::assert_compact_json_snapshot!(run(Cli {
+            from_ref: None,
+            to_ref: Some("HEAD".into()),
+            patterns: vec![],
+        }, repository).collect::<Vec<_>>(), @"[]");
+    }
+
+    #[test]
+    fn test_run_no_matching() {
+        let (tempdir, _repo) = git_test! {
+            "initial commit": [
+                "a.ts" => indoc! {"
+                    const enum G {
+                        // if-changed
+                        A,
+                        // then-change(b.ts)
+                    }
+                "}
+            ]
+        };
+
+        let repository = git2::Repository::open(tempdir.path()).unwrap();
+        insta::assert_compact_json_snapshot!(run(Cli {
+            from_ref: None,
+            to_ref: Some("HEAD".into()),
+            patterns: vec!["c.js".to_string()],
+        }, repository).collect::<Vec<_>>(), @"[]");
     }
 
     #[test]
