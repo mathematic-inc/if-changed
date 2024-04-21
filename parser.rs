@@ -26,18 +26,14 @@ impl StringRef {
         }
     }
 
-    fn modify_with(&mut self, f: impl FnOnce(&str) -> &str) -> &mut Self {
+    fn map(&mut self, f: impl FnOnce(&str) -> &str) -> &mut Self {
         self.reference = f(&*self);
         self
     }
 
-    fn try_modify_with(&mut self, f: impl FnOnce(&str) -> Option<&str>) -> Option<&mut Self> {
-        if let Some(reference) = f(&*self) {
-            self.reference = reference;
-            Some(self)
-        } else {
-            None
-        }
+    fn try_map(&mut self, f: impl FnOnce(&str) -> Option<&str>) -> Option<&mut Self> {
+        self.reference = f(&*self)?;
+        Some(self)
     }
 }
 
@@ -119,23 +115,21 @@ impl Parser {
     fn skip_comments(&mut self) {
         self.skip_whitespaces();
         self.line
-            .modify_with(|line| line.trim_start_matches(COMMENT_START_TOKENS.as_ref()));
+            .map(|line| line.trim_start_matches(COMMENT_START_TOKENS.as_ref()));
     }
 
     fn skip_whitespaces(&mut self) {
-        self.line.modify_with(str::trim_start);
+        self.line.map(str::trim_start);
     }
 
     fn skip_whitespaces_and_eat(&mut self, value: &str) -> bool {
         self.skip_whitespaces();
-        self.line
-            .try_modify_with(|line| line.strip_prefix(value))
-            .is_some()
+        self.line.try_map(|line| line.strip_prefix(value)).is_some()
     }
 
     fn find_and_eat(&mut self, value: &str) -> bool {
         self.line
-            .try_modify_with(|line| match line.find(value) {
+            .try_map(|line| match line.find(value) {
                 Some(index) => Some(&line[index + value.len()..]),
                 None => None,
             })
@@ -165,7 +159,7 @@ impl Parser {
             }
         };
         let id = self.line[..end].trim().to_string();
-        self.line.modify_with(|line| &line[end + 1..]);
+        self.line.map(|line| &line[end + 1..]);
         Ok(Some(id))
     }
 
@@ -219,7 +213,7 @@ impl Parser {
             match self.line.find('\\') {
                 Some(index) => {
                     pattern_buffer.push_str(self.line[..index].trim());
-                    self.line.modify_with(|line| &line[index + 1..]);
+                    self.line.map(|line| &line[index + 1..]);
                     continue;
                 }
                 None => {
@@ -236,7 +230,7 @@ impl Parser {
                         },
                     };
                     pattern_buffer.push_str(self.line[..index].trim());
-                    self.line.modify_with(|line| &line[index + len..]);
+                    self.line.map(|line| &line[index + len..]);
                 }
             }
 
