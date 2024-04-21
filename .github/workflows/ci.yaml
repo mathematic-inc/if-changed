@@ -17,24 +17,18 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@1d96c772d19495a3b5c517cd2bc0cb401ea0529f
-      - name: Set up Cargo cache
-        uses: ./.github/actions/cargo-cache
-        with:
-          key: ${{ hashFiles('**/Cargo.lock') }}
       - name: Set up Rust
         run: rustup default nightly
+      - name: Install development tools
+        uses: taiki-e/install-action@a94d7ba8955e0861119ed8d3fddb8823ef7a97a8
+        with:
+          tool: cargo-deny@0.14.21, cargo-udeps@0.1.47
       - name: Install Rust linters
         run: rustup component add clippy rustfmt
-      - name: Lint Rust code
+      - name: Run checks
         run: |
           cargo fmt --check
           cargo clippy --locked --all-features -- -D warnings
-      - name: Install other tools
-        run: |
-          cargo install --locked cargo-deny || true
-          cargo install --locked cargo-udeps || true
-      - name: Check everything else
-        run: |
           cargo deny check
           cargo udeps
   tests:
@@ -56,14 +50,30 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@1d96c772d19495a3b5c517cd2bc0cb401ea0529f
-      - name: Set up Cargo cache
-        uses: ./.github/actions/cargo-cache
-        with:
-          key: ${{ hashFiles('**/Cargo.lock') }}
       - name: Set up Rust
         run: rustup default ${{ matrix.channel }}
       - name: Run tests
         run: cargo test --locked
+  coverage:
+    name: Coverage
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@1d96c772d19495a3b5c517cd2bc0cb401ea0529f
+      - name: Set up Rust
+        run: rustup default nightly
+      - name: Install development tools
+        uses: taiki-e/install-action@a94d7ba8955e0861119ed8d3fddb8823ef7a97a8
+        with:
+          tool: cargo-llvm-cov@0.6.9
+      - name: Generate code coverage
+        run: cargo llvm-cov --all-features --workspace --branch --fail-under-lines 85 --lcov --output-path target/lcov.info
+      - name: Upload code coverage
+        uses: romeovs/lcov-reporter-action@4cf015aa4afa87b78238301f1e3dc140ea0e1ec6
+        with:
+          lcov-file: ./target/lcov.info
+          delete-old-comments: true
   success:
     name: Success
     needs: [checks, tests]

@@ -87,9 +87,12 @@ pub(super) struct Parser {
 }
 
 impl Parser {
-    pub(super) fn new(path: impl AsRef<Path>) -> Result<Parser, io::Error> {
+    pub(super) fn new(
+        relpath: impl AsRef<Path>,
+        path: impl AsRef<Path>,
+    ) -> Result<Parser, io::Error> {
         Ok(Parser {
-            path: path.as_ref().to_owned(),
+            path: relpath.as_ref().to_owned(),
             lines: io::BufReader::new(match fs::File::open(&path) {
                 Ok(file) => file,
                 Err(error) => return Err(error),
@@ -107,11 +110,7 @@ impl Parser {
                     self.line = NumberedLine::new(self.line.number + 1, line);
                     Ok(true)
                 }
-                Err(value) => Err(vec![format!(
-                    "Failed to read {}: {}",
-                    self.path.display(),
-                    value
-                )]),
+                Err(value) => Err(vec![format!("Failed to read {}: {:?}", value, self.path)]),
             },
             None => Ok(false),
         }
@@ -160,9 +159,8 @@ impl Parser {
             Some(end) => end,
             None => {
                 return Err(vec![format!(
-                    "Could not find ')' for \"if-changed\" at line {} for \"{}\".",
-                    self.line.number,
-                    self.path.display()
+                    "Could not find ')' for \"if-changed\" at line {} for {:?}.",
+                    self.line.number, self.path
                 )])
             }
         };
@@ -189,8 +187,8 @@ impl Parser {
         let then_change_line = self.line.number;
         if !self.skip_whitespaces_and_eat("(") {
             return Err(vec![format!(
-                "Could not find '(' for \"then-change\" at line {then_change_line} for \"{}\".",
-                self.path.display()
+                "Could not find '(' for \"then-change\" at line {then_change_line} for {:?}.",
+                self.path
             )]);
         }
 
@@ -207,8 +205,8 @@ impl Parser {
             } {
                 if !self.next_line()? {
                     return Err(vec![format!(
-                        "Could not find ')' for \"then-change\" at line {then_change_line} for \"{}\".",
-                        self.path.display()
+                        "Could not find ')' for \"then-change\" at line {then_change_line} for {:?}.",
+                        self.path
                     )]);
                 }
                 self.skip_comments();
@@ -254,8 +252,8 @@ impl Parser {
                             break;
                         }
                         return Err(vec![format!(
-                            "Unexpected empty path at line {pattern_line} for \"then-change\" at line {then_change_line} for \"{}\".",
-                            self.path.display()
+                            "Unexpected empty path at line {pattern_line} for \"then-change\" at line {then_change_line} for {:?}.",
+                            self.path
                         )]);
                     }
                     (pattern_buffer.clone(), None)
@@ -299,14 +297,24 @@ impl Iterator for Parser {
 
             if let Some((paths, end)) = match self.parse_then_change() {
                 Ok(info) => info,
-                Err(error) => return Some(Err(error)),
+                Err(error) => {
+                    let mut errors = Vec::new();
+                    if self.blocks.pop().is_none() {
+                        errors.push(format!(
+                            "Missing \"if-changed\" for \"then-change\" at line {} for {:?}.",
+                            self.line.number, self.path
+                        ));
+                    }
+                    errors.extend(error);
+                    return Some(Err(errors));
+                }
             } {
                 let mut block = match self.blocks.pop() {
                     Some(block) => block,
                     None => {
                         return Some(Err(vec![format!(
-                            "Missing \"if-changed\" for \"then-change\" at line {}.",
-                            end
+                            "Missing \"if-changed\" for \"then-change\" at line {} for {:?}.",
+                            end, self.path
                         )]))
                     }
                 };
@@ -320,16 +328,14 @@ impl Iterator for Parser {
         if self.blocks.is_empty() {
             return None;
         }
-
-        Some(Err(self
-            .blocks
-            .iter()
+        let blocks = std::mem::take(&mut self.blocks);
+        Some(Err(blocks
+            .into_iter()
             .filter(|block| block.range.1 == 0)
             .map(|block| {
                 format!(
-                    "Could not find \"then-changed\" for \"if-changed\" at line {} for \"{}\".",
-                    block.range.0,
-                    self.path.display()
+                    "Missing \"then-changed\" for \"if-changed\" at line {} for {:?}.",
+                    block.range.0, self.path
                 )
             })
             .collect()))
@@ -350,7 +356,7 @@ mod tests {
             fn $name() {
                 let mut file = NamedTempFile::new().unwrap();
                 writeln!(file, $value).unwrap();
-                insta::assert_compact_json_snapshot!(Parser::new(file.path())
+                insta::assert_compact_json_snapshot!(Parser::new(file.path(), file.path())
                     .unwrap()
                     .collect::<Result<Vec<_>, _>>(), @$exp);
             }
