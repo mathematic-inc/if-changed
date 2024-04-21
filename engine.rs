@@ -5,7 +5,7 @@ use std::{
     path::{Path, PathBuf},
 };
 
-pub use git::git;
+pub use git::GitEngine;
 
 use super::parser::Parser;
 
@@ -138,7 +138,7 @@ mod tests {
 
     use indoc::indoc;
 
-    use crate::{testing::git_test, Engine as _};
+    use crate::{engine::GitEngine, testing::git_test, Engine as _};
 
     #[test]
     fn test_check() {
@@ -161,7 +161,7 @@ mod tests {
             ]
         };
 
-        let engine = crate::git(&repo, None, None);
+        let engine = GitEngine::new(&repo, None, None);
         assert_eq!(engine.resolve(""), tempdir.path().canonicalize().unwrap());
 
         insta::assert_compact_json_snapshot!(engine.matches([""; 0]).collect::<Vec<_>>(), @r###"[{"Ok": "src/a.js"}, {"Ok": "src/b.js"}]"###);
@@ -188,7 +188,7 @@ mod tests {
             ]
         };
 
-        let engine = crate::git(&repo, None, None);
+        let engine = GitEngine::new(&repo, None, None);
         assert_eq!(engine.resolve(""), tempdir.path().canonicalize().unwrap());
 
         insta::assert_compact_json_snapshot!(engine.matches(["";0]).collect::<Vec<_>>(), @r###"[{"Ok": "src/a.js"}]"###);
@@ -216,7 +216,7 @@ mod tests {
             ]
         };
 
-        let engine = crate::git(&repo, None, None);
+        let engine = GitEngine::new(&repo, None, None);
         assert_eq!(engine.resolve(""), tempdir.path().canonicalize().unwrap());
 
         insta::assert_compact_json_snapshot!(engine.matches(["";0]).collect::<Vec<_>>(), @r###"[{"Ok": "src/a.js"}]"###);
@@ -252,7 +252,7 @@ mod tests {
             ]
         };
 
-        let engine = crate::git(&repo, None, None);
+        let engine = GitEngine::new(&repo, None, None);
         assert_eq!(engine.resolve(""), tempdir.path().canonicalize().unwrap());
 
         insta::assert_compact_json_snapshot!(engine.matches([""; 0]).collect::<Vec<_>>(), @r###"[{"Ok": "src/a.js"}, {"Ok": "src/b.js"}]"###);
@@ -289,7 +289,7 @@ mod tests {
             ]
         };
 
-        let engine = crate::git(&repo, None, None);
+        let engine = GitEngine::new(&repo, None, None);
         assert_eq!(engine.resolve(""), tempdir.path().canonicalize().unwrap());
 
         insta::assert_compact_json_snapshot!(engine.matches([""; 0]).collect::<Vec<_>>(), @r###"[{"Ok": "src/a.js"}, {"Ok": "src/b.js"}]"###);
@@ -317,7 +317,7 @@ mod tests {
             ]
         };
 
-        let engine = crate::git(&repo, None, None);
+        let engine = GitEngine::new(&repo, None, None);
         assert_eq!(engine.resolve(""), tempdir.path().canonicalize().unwrap());
 
         insta::assert_compact_json_snapshot!(engine.matches([""; 0]).collect::<Vec<_>>(), @r###"[{"Ok": "src/a.js"}, {"Ok": "src/b.js"}]"###);

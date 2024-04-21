@@ -1,7 +1,8 @@
 use std::process::ExitCode;
 
 use clap::Parser as ClapParser;
-use if_changed::{git, Engine as _};
+use genawaiter::{rc::gen, yield_};
+use if_changed::{Engine as _, GitEngine};
 
 #[derive(ClapParser, Debug)]
 #[command(author, version, about, long_about = None)]
@@ -27,29 +28,284 @@ pub struct Cli {
     pub patterns: Vec<String>,
 }
 
-fn main() -> ExitCode {
-    let cli = Cli::parse();
-
-    let repository = git2::Repository::open_from_env().unwrap();
-    let engine = git(&repository, cli.from_ref.as_deref(), cli.to_ref.as_deref());
-    let mut has_error = false;
-    for result in engine.matches(cli.patterns) {
-        let Ok(path) = result else {
-            continue;
-        };
-        if engine.is_ignored(&path) {
-            continue;
-        }
-        if let Err(errors) = engine.check(path) {
-            for error in errors {
-                eprintln!("{}", error);
+fn run(cli: Cli, repository: git2::Repository) -> impl Iterator<Item = String> {
+    gen!({
+        let engine = GitEngine::new(&repository, cli.from_ref.as_deref(), cli.to_ref.as_deref());
+        for result in engine.matches(cli.patterns) {
+            let Ok(path) = result else {
+                continue;
+            };
+            if engine.is_ignored(&path) {
+                continue;
             }
-            has_error = true;
+            if let Err(errors) = engine.check(path) {
+                for error in errors {
+                    yield_!(error);
+                }
+            }
         }
+    })
+    .into_iter()
+}
+
+fn main() -> ExitCode {
+    let mut has_error = false;
+    let repository = match git2::Repository::open_from_env() {
+        Ok(repository) => repository,
+        Err(error) => {
+            eprintln!("Could not open the repository: {error}");
+            return ExitCode::FAILURE;
+        }
+    };
+    for error in run(Cli::parse(), repository) {
+        has_error = true;
+        eprintln!("{error}");
     }
     if has_error {
         ExitCode::FAILURE
     } else {
         ExitCode::SUCCESS
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use if_changed::testing::git_test;
+    use indoc::indoc;
+
+    use super::*;
+
+    #[test]
+    fn test_run() {
+        let (tempdir, _repo) = git_test! {
+            "initial commit": [
+                "a.ts" => indoc! {"
+                    const enum G {
+                        // if-changed
+                        A,
+                        // then-change(b.ts)
+                    }
+                "},
+                "b.ts" => indoc! {"
+                    const enum G {
+                        // if-changed
+                        A,
+                        // then-change(a.ts)
+                    }
+                "}
+            ]
+        };
+
+        let repository = git2::Repository::open(tempdir.path()).unwrap();
+        insta::assert_compact_json_snapshot!(run(Cli {
+            from_ref: None,
+            to_ref: Some("HEAD".into()),
+            patterns: vec![],
+        }, repository).collect::<Vec<_>>(), @"[]");
+    }
+
+    #[test]
+    fn test_run_fail() {
+        let (tempdir, _repo) = git_test! {
+            "initial commit": [
+                "a.ts" => indoc! {"
+                    const enum G {
+                        // if-changed
+                        A,
+                        // then-change(b.ts)
+                    }
+                "}
+            ]
+        };
+
+        let repository = git2::Repository::open(tempdir.path()).unwrap();
+        insta::assert_compact_json_snapshot!(run(Cli {
+            from_ref: None,
+            to_ref: Some("HEAD".into()),
+            patterns: vec![],
+        }, repository).collect::<Vec<_>>(), @r###"["Expected \"b.ts\" to be modified because of \"then-change\" in \"a.ts\" at line 4."]"###);
+    }
+
+    #[test]
+    fn test_run_working_dir() {
+        let (tempdir, _repo) = git_test! {
+            working: [
+                "a.ts" => indoc! {"
+                    const enum G {
+                        // if-changed
+                        A,
+                        // then-change(b.ts)
+                    }
+                "},
+                "b.ts" => indoc! {"
+                    const enum G {
+                        // if-changed
+                        A,
+                        // then-change(a.ts)
+                    }
+                "}
+            ]
+        };
+
+        let repository = git2::Repository::open(tempdir.path()).unwrap();
+        insta::assert_compact_json_snapshot!(run(Cli {
+            from_ref: None,
+            to_ref: None,
+            patterns: vec![],
+        }, repository).collect::<Vec<_>>(), @"[]");
+    }
+
+    #[test]
+    fn test_run_working_dir_fail() {
+        let (tempdir, _repo) = git_test! {
+            working: [
+                "a.ts" => indoc! {"
+                    const enum G {
+                        // if-changed
+                        A,
+                        // then-change(b.ts)
+                    }
+                "}
+            ]
+        };
+
+        let repository = git2::Repository::open(tempdir.path()).unwrap();
+        insta::assert_compact_json_snapshot!(run(Cli {
+            from_ref: None,
+            to_ref: None,
+            patterns: vec![],
+        }, repository).collect::<Vec<_>>(), @r###"["Expected \"b.ts\" to be modified because of \"then-change\" in \"a.ts\" at line 4."]"###);
+    }
+
+    #[test]
+    fn test_run_two_commits() {
+        let (tempdir, _repo) = git_test! {
+            "initial commit": [
+                "a.ts" => indoc! {"
+                    const enum G {
+                        // if-changed
+                        A,
+                        // then-change(b.ts)
+                    }
+                "},
+                "b.ts" => indoc! {"
+                    const enum G {
+                        // if-changed
+                        A,
+                        // then-change(a.ts)
+                    }
+                "}
+            ]
+            "second commit": [
+                "a.ts" => indoc! {"
+                    const enum G {
+                        // if-changed
+                        A,
+                        B,
+                        // then-change(b.ts)
+                    }
+                "},
+                "b.ts" => indoc! {"
+                    const enum G {
+                        // if-changed
+                        A,
+                        B,
+                        // then-change(a.ts)
+                    }
+                "}
+            ]
+        };
+
+        let repository = git2::Repository::open(tempdir.path()).unwrap();
+        insta::assert_compact_json_snapshot!(run(Cli {
+            from_ref: Some("HEAD^".into()),
+            to_ref: Some("HEAD".into()),
+            patterns: vec![],
+        }, repository).collect::<Vec<_>>(), @"[]");
+    }
+
+    #[test]
+    fn test_run_two_commits_fail() {
+        let (tempdir, _repo) = git_test! {
+            "initial commit": [
+                "a.ts" => indoc! {"
+                    const enum G {
+                        // if-changed
+                        A,
+                        // then-change(b.ts)
+                    }
+                "},
+                "b.ts" => indoc! {"
+                    const enum G {
+                        // if-changed
+                        A,
+                        // then-change(a.ts)
+                    }
+                "}
+            ]
+            "second commit": [
+                "a.ts" => indoc! {"
+                    const enum G {
+                        // if-changed
+                        A,
+                        B,
+                        // then-change(b.ts)
+                    }
+                "}
+            ]
+        };
+
+        let repository = git2::Repository::open(tempdir.path()).unwrap();
+        insta::assert_compact_json_snapshot!(run(Cli {
+            from_ref: Some("HEAD^".into()),
+            to_ref: Some("HEAD".into()),
+            patterns: vec![],
+        }, repository).collect::<Vec<_>>(), @r###"["Expected \"b.ts\" to be modified because of \"then-change\" in \"a.ts\" at line 5."]"###);
+    }
+
+    #[test]
+    fn test_run_two_commits_fail_no_change() {
+        let (tempdir, _repo) = git_test! {
+            "initial commit": [
+                "a.ts" => indoc! {"
+                    const enum G {
+                        // if-changed
+                        A,
+                        // then-change(b.ts)
+                    }
+                "},
+                "b.ts" => indoc! {"
+                    const enum G {
+                        // if-changed
+                        A,
+                        // then-change(a.ts)
+                    }
+                "}
+            ]
+            "second commit": [
+                "a.ts" => indoc! {"
+                    const enum G {
+                        // if-changed
+                        A,
+                        B,
+                        // then-change(b.ts)
+                    }
+                "},
+                "b.ts" => indoc! {"
+                    const enum G {
+                        // if-changed
+                        A,
+                        // then-change(a.ts)
+                    }
+                "}
+            ]
+        };
+
+        let repository = git2::Repository::open(tempdir.path()).unwrap();
+        insta::assert_compact_json_snapshot!(run(Cli {
+            from_ref: Some("HEAD^".into()),
+            to_ref: Some("HEAD".into()),
+            patterns: vec![],
+        }, repository).collect::<Vec<_>>(), @r###"["Expected \"b.ts\" to be modified because of \"then-change\" in \"a.ts\" at line 5."]"###);
     }
 }
