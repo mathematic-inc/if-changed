@@ -1,3 +1,4 @@
+#[macro_export]
 macro_rules! git_test {
     ($($name:literal: [$($path:literal => $content:expr),*])* $(staged: [$($spath:literal => $scontent:expr),*])? $(working: [$($wdpath:literal => $wdcontent:expr),*])?) => {{
         let tempdir = ::tempfile::tempdir().unwrap();
@@ -50,7 +51,7 @@ macro_rules! git_test {
             ::std::fs::write(path, $wdcontent).unwrap();
         })*)?
         (tempdir, repo)
-}}
+    }}
 }
 
-pub(crate) use git_test;
+pub use git_test;
