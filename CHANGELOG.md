@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.1](https://github.com/mathematic-inc/if-changed/compare/v0.3.0...v0.3.1) (2024-04-21)
+
+
+### Bug Fixes
+
+* Allow missing `from-ref` ([#8](https://github.com/mathematic-inc/if-changed/issues/8)) ([e0eea9b](https://github.com/mathematic-inc/if-changed/commit/e0eea9b6a0f516b5ac77a60b7d6d9e52d208dffa))
+
 ## [0.3.0](https://github.com/mathematic-inc/if-changed/compare/v0.2.0...v0.3.0) (2024-04-20)
 
 
