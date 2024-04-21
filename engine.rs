@@ -30,13 +30,19 @@ pub trait Engine {
     /// Check a file for dependent changes.
     fn check(&self, path: impl AsRef<Path>) -> Result<(), Vec<String>> {
         let path = path.as_ref();
-        let parser = Parser::new(self.resolve(path)).map_err(|error| vec![error.to_string()])?;
+        let parser = match Parser::new(path, self.resolve(path)) {
+            Ok(parser) => parser,
+            Err(error) => return Err(vec![format!("Could not open {path:?}: {error}")]),
+        };
 
         let mut errors = Vec::new();
         for block in parser {
             let block = match block {
                 Ok(block) => block,
-                Err(error) => return Err(error),
+                Err(error) => {
+                    errors.extend(error);
+                    continue;
+                }
             };
 
             if !self.is_range_modified(path, block.range) {
@@ -88,7 +94,7 @@ pub trait Engine {
                     };
 
                     // Try to open the file in search of the named block.
-                    let mut parser = match Parser::new(self.resolve(&dependent)) {
+                    let mut parser = match Parser::new(&dependent, self.resolve(&dependent)) {
                         Ok(parser) => parser,
                         Err(error) => {
                             errors.push(format!(
@@ -224,6 +230,21 @@ mod tests {
     }
 
     #[test]
+    fn test_check_missing_file() {
+        let (tempdir, repo) = git_test! {};
+
+        let engine = GitEngine::new(&repo, None, None);
+        assert_eq!(engine.resolve(""), tempdir.path().canonicalize().unwrap());
+
+        assert!(engine
+            .check(&Path::new("a.js"))
+            .unwrap_err()
+            .first()
+            .unwrap()
+            .contains("Could not open \"a.js\""));
+    }
+
+    #[test]
     fn test_check_named() {
         let (tempdir, repo) = git_test! {
             "initial commit": [
@@ -256,7 +277,7 @@ mod tests {
         assert_eq!(engine.resolve(""), tempdir.path().canonicalize().unwrap());
 
         insta::assert_compact_json_snapshot!(engine.matches([""; 0]).collect::<Vec<_>>(), @r###"[{"Ok": "src/a.js"}, {"Ok": "src/b.js"}]"###);
-        insta::assert_compact_json_snapshot!(engine.check( &Path::new("src/a.js")), @r###"{"Ok": null}"###);
+        insta::assert_compact_json_snapshot!(engine.check(&Path::new("src/a.js")), @r###"{"Ok": null}"###);
     }
 
     #[test]
@@ -328,5 +349,24 @@ mod tests {
           ]
         }
         "###);
+    }
+
+    #[test]
+    fn test_check_empty_then_change() {
+        let (tempdir, repo) = git_test! {
+            working: [
+                "a.js" => indoc!{"
+                    // if-changed
+                    foo
+                    // then-change(
+                "}
+            ]
+        };
+
+        let engine = GitEngine::new(&repo, None, None);
+        assert_eq!(engine.resolve(""), tempdir.path().canonicalize().unwrap());
+
+        insta::assert_compact_json_snapshot!(engine.matches([""; 0]).collect::<Vec<_>>(), @r###"[{"Ok": "a.js"}]"###);
+        insta::assert_compact_json_snapshot!(engine.check(&Path::new("a.js")), @r###"{"Err": ["Could not find ')' for \"then-change\" at line 3 for \"a.js\"."]}"###);
     }
 }
