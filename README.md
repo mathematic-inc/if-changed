@@ -42,6 +42,16 @@ Options:
           Print version
 ```
 
+To use with [`pre-commit`](https://pre-commit.com), add the following to your `.pre-commit-config.yaml`:
+
+```yaml
+repos:
+  - repo: https://github.com/mathematic-inc/if-changed
+    rev: v0.3.1
+    hooks:
+      - id: if-changed
+```
+
 ### Motivating example
 
 Suppose you have the following:
