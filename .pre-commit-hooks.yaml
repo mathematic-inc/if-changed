@@ -4,3 +4,4 @@
   name: check if dependent files have changed
   language: rust
   entry: if-changed
+  stages: [pre-commit, pre-push]
