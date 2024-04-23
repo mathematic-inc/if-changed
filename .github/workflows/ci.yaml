@@ -76,10 +76,10 @@ jobs:
           delete-old-comments: true
   success:
     name: Success
-    needs: [checks, tests]
+    needs: [checks, tests, coverage]
     if: always()
     runs-on: ubuntu-latest
     steps:
-      - if: needs.checks.result != 'success' || needs.tests.result != 'success'
+      - if: needs.checks.result != 'success' || needs.tests.result != 'success' || needs.coverage.result != 'success'
         run: exit 1
       - run: exit 0
