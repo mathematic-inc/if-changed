@@ -5,6 +5,8 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  merge_group:
+    branches: [main]
 
 concurrency:
   group: ${{ github.head_ref || github.run_id }}
@@ -57,7 +59,6 @@ jobs:
   coverage:
     name: Coverage
     runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request'
     steps:
       - name: Check out repository
         uses: actions/checkout@37b082107ba410260a3aaddf93122e04801ce631
@@ -71,6 +72,7 @@ jobs:
         run: cargo llvm-cov --all-features --workspace --branch --fail-under-lines 85 --lcov --output-path target/lcov.info
       - name: Upload code coverage
         uses: romeovs/lcov-reporter-action@4cf015aa4afa87b78238301f1e3dc140ea0e1ec6
+        if: github.event_name == 'pull_request'
         with:
           lcov-file: ./target/lcov.info
           delete-old-comments: true
