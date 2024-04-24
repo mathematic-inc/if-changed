@@ -11,6 +11,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository
-        uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b
+        uses: actions/checkout@8459bc0c7e3759cdf591f513d9f141a95fef0a8f
       - name: Publish
         run: cargo publish --locked --token ${{ secrets.CRATES_IO_TOKEN }}
