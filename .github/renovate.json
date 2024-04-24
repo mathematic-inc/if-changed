@@ -3,7 +3,7 @@
   "extends": ["config:recommended"],
   "packageRules": [
     {
-      "matchManagers": ["github-actions", "cargo"],
+      "matchManagers": ["github-actions", "cargo", "regex"],
       "groupName": "{{manager}}",
       "automerge": true
     }
