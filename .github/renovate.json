@@ -7,5 +7,20 @@
       "groupName": "{{manager}}",
       "automerge": true
     }
+  ],
+  "customManagers": [
+    {
+      "customType": "regex",
+      "fileMatch": [
+        "(^|/)(workflow-templates|.(?:github|gitea|forgejo)/(?:workflows|actions))/.+.ya?ml$",
+        "(^|/)action.ya?ml$"
+      ],
+      "matchStringsStrategy": "recursive",
+      "matchStrings": [
+        "taiki-e/install-action(?:[\\s\\S]+?)tool:\\s*(.*)",
+        "(?<depName>[^@\\s]*)@(?<versioning>[^,\\s]*)"
+      ],
+      "datasourceTemplate": "cargo"
+    }
   ]
 }
