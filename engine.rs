@@ -171,7 +171,7 @@ mod tests {
         assert_eq!(engine.resolve(""), tempdir.path().canonicalize().unwrap());
 
         insta::assert_compact_json_snapshot!(engine.matches([""; 0]).collect::<Vec<_>>(), @r###"[{"Ok": "src/a.js"}, {"Ok": "src/b.js"}]"###);
-        insta::assert_compact_json_snapshot!(engine.check(&Path::new("src/a.js")), @r###"{"Ok": null}"###);
+        insta::assert_compact_json_snapshot!(engine.check(Path::new("src/a.js")), @r###"{"Ok": null}"###);
     }
 
     #[test]
@@ -198,7 +198,7 @@ mod tests {
         assert_eq!(engine.resolve(""), tempdir.path().canonicalize().unwrap());
 
         insta::assert_compact_json_snapshot!(engine.matches(["";0]).collect::<Vec<_>>(), @r###"[{"Ok": "src/a.js"}]"###);
-        insta::assert_compact_json_snapshot!(engine.check(&Path::new("src/a.js")), @r###"{"Err": ["Expected \"src/b.js\" to be modified because of \"then-change\" in \"src/a.js\" at line 3."]}"###);
+        insta::assert_compact_json_snapshot!(engine.check(Path::new("src/a.js")), @r###"{"Err": ["Expected \"src/b.js\" to be modified because of \"then-change\" in \"src/a.js\" at line 3."]}"###);
     }
 
     #[test]
@@ -226,7 +226,7 @@ mod tests {
         assert_eq!(engine.resolve(""), tempdir.path().canonicalize().unwrap());
 
         insta::assert_compact_json_snapshot!(engine.matches(["";0]).collect::<Vec<_>>(), @r###"[{"Ok": "src/a.js"}]"###);
-        insta::assert_compact_json_snapshot!(engine.check(&Path::new("src/a.js")), @r###"{"Ok": null}"###);
+        insta::assert_compact_json_snapshot!(engine.check(Path::new("src/a.js")), @r###"{"Ok": null}"###);
     }
 
     #[test]
@@ -237,7 +237,7 @@ mod tests {
         assert_eq!(engine.resolve(""), tempdir.path().canonicalize().unwrap());
 
         assert!(engine
-            .check(&Path::new("a.js"))
+            .check(Path::new("a.js"))
             .unwrap_err()
             .first()
             .unwrap()
@@ -277,7 +277,7 @@ mod tests {
         assert_eq!(engine.resolve(""), tempdir.path().canonicalize().unwrap());
 
         insta::assert_compact_json_snapshot!(engine.matches([""; 0]).collect::<Vec<_>>(), @r###"[{"Ok": "src/a.js"}, {"Ok": "src/b.js"}]"###);
-        insta::assert_compact_json_snapshot!(engine.check(&Path::new("src/a.js")), @r###"{"Ok": null}"###);
+        insta::assert_compact_json_snapshot!(engine.check(Path::new("src/a.js")), @r###"{"Ok": null}"###);
     }
 
     #[test]
@@ -314,7 +314,7 @@ mod tests {
         assert_eq!(engine.resolve(""), tempdir.path().canonicalize().unwrap());
 
         insta::assert_compact_json_snapshot!(engine.matches([""; 0]).collect::<Vec<_>>(), @r###"[{"Ok": "src/a.js"}, {"Ok": "src/b.js"}]"###);
-        insta::assert_compact_json_snapshot!(engine.check(&Path::new("src/a.js")), @r###"{"Err": ["Expected \"src/b.js\" to be modified because of \"then-change\" in \"src/a.js\" at line 3."]}"###);
+        insta::assert_compact_json_snapshot!(engine.check(Path::new("src/a.js")), @r###"{"Err": ["Expected \"src/b.js\" to be modified because of \"then-change\" in \"src/a.js\" at line 3."]}"###);
     }
 
     #[test]
@@ -342,7 +342,7 @@ mod tests {
         assert_eq!(engine.resolve(""), tempdir.path().canonicalize().unwrap());
 
         insta::assert_compact_json_snapshot!(engine.matches([""; 0]).collect::<Vec<_>>(), @r###"[{"Ok": "src/a.js"}, {"Ok": "src/b.js"}]"###);
-        insta::assert_compact_json_snapshot!(engine.check(&Path::new("src/a.js")), @r###"
+        insta::assert_compact_json_snapshot!(engine.check(Path::new("src/a.js")), @r###"
         {
           "Err": [
             "Could not find \"if-changed\" with name \"bar\" in \"src/b.js\" for \"then-change\" in \"src/a.js\" at line 3."
@@ -367,6 +367,6 @@ mod tests {
         assert_eq!(engine.resolve(""), tempdir.path().canonicalize().unwrap());
 
         insta::assert_compact_json_snapshot!(engine.matches([""; 0]).collect::<Vec<_>>(), @r###"[{"Ok": "a.js"}]"###);
-        insta::assert_compact_json_snapshot!(engine.check(&Path::new("a.js")), @r###"{"Err": ["Could not find ')' for \"then-change\" at line 3 for \"a.js\"."]}"###);
+        insta::assert_compact_json_snapshot!(engine.check(Path::new("a.js")), @r###"{"Err": ["Could not find ')' for \"then-change\" at line 3 for \"a.js\"."]}"###);
     }
 }
