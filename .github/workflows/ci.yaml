@@ -29,11 +29,11 @@ jobs:
         run: rustup component add clippy rustfmt
       - name: Run checks
         run: |
-          cargo fmt --check
-          cargo hack --feature-powerset check --locked
-          cargo hack --feature-powerset clippy --locked -- -D warnings
+          cargo fmt --check --all
+          cargo hack --feature-powerset check --locked --workspace
+          cargo hack --feature-powerset clippy --locked --workspace -- -D warnings
           cargo deny check
-          cargo udeps --locked
+          cargo udeps --locked --workspace
   tests:
     name: Test on ${{ matrix.os.name }} (${{ matrix.channel }})
     runs-on: ${{ matrix.os.value }}
