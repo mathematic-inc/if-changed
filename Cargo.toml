@@ -25,5 +25,5 @@ git2 = "0.18"
 [dev-dependencies]
 tempfile = "3"
 insta = { version = "1.38", features = ["json"] }
-serde = { version = "1.0.198", features = ["derive"] }
+serde = { version = "1.0.199", features = ["derive"] }
 indoc = "2"
