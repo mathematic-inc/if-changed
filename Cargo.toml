@@ -17,13 +17,13 @@ name = "if-changed"
 path = "bin/if-changed.rs"
 
 [dependencies]
-bstr = "1"
-clap = { version = "4", features = ["derive", "env"] }
-genawaiter = "0.99"
-git2 = "0.18"
+bstr = "1.9.1"
+clap = { version = "4.5.4", features = ["derive", "env"] }
+genawaiter = "0.99.1"
+git2 = "0.18.3"
 
 [dev-dependencies]
-tempfile = "3"
+tempfile = "3.10.1"
 insta = { version = "1.38", features = ["json"] }
 serde = { version = "1.0.199", features = ["derive"] }
-indoc = "2"
+indoc = "2.0.5"
