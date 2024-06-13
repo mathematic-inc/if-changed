@@ -5,3 +5,4 @@
   language: rust
   entry: if-changed
   stages: [pre-commit, pre-push]
+  types: [text]
