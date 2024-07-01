@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.3.3](https://github.com/mathematic-inc/if-changed/compare/v0.3.2...v0.3.3) (2024-07-01)
+
+
+### Bug Fixes
+
+* **deps:** Update rust crate clap to v4.5.8 ([#121](https://github.com/mathematic-inc/if-changed/issues/121)) ([e217226](https://github.com/mathematic-inc/if-changed/commit/e217226d22efeb7477cfc9bc6e4b899d3d6be042))
+* **deps:** Update rust crate git2 to 0.19.0 ([#89](https://github.com/mathematic-inc/if-changed/issues/89)) ([130f53a](https://github.com/mathematic-inc/if-changed/commit/130f53a2e5bd3e971543bfe8ec9cd4a5d69a0732))
+
 ## [0.3.2](https://github.com/mathematic-inc/if-changed/compare/v0.3.1...v0.3.2) (2024-06-13)
 
 
