@@ -16,4 +16,5 @@ allow = [
     "Zlib",
 ]
 
+[advisories]
 ignore = ["RUSTSEC-2024-0370"]
