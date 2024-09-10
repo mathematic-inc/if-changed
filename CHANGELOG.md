@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.3.3](https://github.com/mathematic-inc/if-changed/compare/v0.3.2...v0.3.3) (2024-09-10)
+
+
+### Bug Fixes
+
+* **deps:** Update rust crate bstr to v1.10.0 ([#160](https://github.com/mathematic-inc/if-changed/issues/160)) ([ff1b235](https://github.com/mathematic-inc/if-changed/commit/ff1b235b04c73720f21a0ed2ae4866a91e5178b5))
+* **deps:** Update rust crate clap to v4.5.10 ([#153](https://github.com/mathematic-inc/if-changed/issues/153)) ([85718b5](https://github.com/mathematic-inc/if-changed/commit/85718b5934cbf6c6fa376a3613ca34f8eae43468))
+* **deps:** Update rust crate clap to v4.5.11 ([#156](https://github.com/mathematic-inc/if-changed/issues/156)) ([7113414](https://github.com/mathematic-inc/if-changed/commit/7113414533033004bdeb595c8e889be3c3de030d))
+* **deps:** Update rust crate clap to v4.5.12 ([#175](https://github.com/mathematic-inc/if-changed/issues/175)) ([c23bb05](https://github.com/mathematic-inc/if-changed/commit/c23bb059aed84693f157f5cd4c954465c0a5f423))
+* **deps:** Update rust crate clap to v4.5.13 ([#176](https://github.com/mathematic-inc/if-changed/issues/176)) ([92b7d4c](https://github.com/mathematic-inc/if-changed/commit/92b7d4cb63453834ed5d07df9c2cc04427c6cbb3))
+* **deps:** Update rust crate clap to v4.5.14 ([#190](https://github.com/mathematic-inc/if-changed/issues/190)) ([5942444](https://github.com/mathematic-inc/if-changed/commit/59424448659456940cc688e019050e2a49dab12e))
+* **deps:** Update rust crate clap to v4.5.15 ([#192](https://github.com/mathematic-inc/if-changed/issues/192)) ([9feded3](https://github.com/mathematic-inc/if-changed/commit/9feded3229a97956ca8455e37afb3aaf0878d935))
+* **deps:** Update rust crate clap to v4.5.16 ([#204](https://github.com/mathematic-inc/if-changed/issues/204)) ([90fb9a1](https://github.com/mathematic-inc/if-changed/commit/90fb9a17b9a7d3564ab583594546e6ec3cd3d62a))
+* **deps:** Update rust crate clap to v4.5.8 ([#121](https://github.com/mathematic-inc/if-changed/issues/121)) ([e217226](https://github.com/mathematic-inc/if-changed/commit/e217226d22efeb7477cfc9bc6e4b899d3d6be042))
+* **deps:** Update rust crate clap to v4.5.9 ([#132](https://github.com/mathematic-inc/if-changed/issues/132)) ([f4eb9bf](https://github.com/mathematic-inc/if-changed/commit/f4eb9bf50310efb46fd4b8bae5a6cbb8ad1b8253))
+* **deps:** Update rust crate git2 to 0.19.0 ([#89](https://github.com/mathematic-inc/if-changed/issues/89)) ([130f53a](https://github.com/mathematic-inc/if-changed/commit/130f53a2e5bd3e971543bfe8ec9cd4a5d69a0732))
+
 ## [0.3.2](https://github.com/mathematic-inc/if-changed/compare/v0.3.1...v0.3.2) (2024-06-13)
 
 
