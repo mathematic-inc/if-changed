@@ -3,11 +3,11 @@ name = "if-changed"
 version = "0.3.2"
 edition = "2021"
 description = "A pre-submit for file changes."
-license = "MIT OR Apache-2.0"
+license = "Apache-2.0"
 authors = ["Mathematic Inc"]
 repository = "https://github.com/mathematic-inc/if-changed"
 categories = ["command-line-utilities", "development-tools", "filesystem"]
-keywords = ["change", "git", "presubmit", "pre-submit"]
+keywords = ["git", "presubmit", "pre-submit", "ci", "hooks"]
 
 [lib]
 path = "if-changed.rs"

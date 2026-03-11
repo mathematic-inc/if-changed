@@ -47,7 +47,7 @@ To use with [`pre-commit`](https://pre-commit.com), add the following to your `.
 ```yaml
 repos:
   - repo: https://github.com/mathematic-inc/if-changed
-    rev: v0.3.1
+    rev: v0.3.2
     hooks:
       - id: if-changed
 ```
@@ -163,3 +163,5 @@ To disable `if-changed` for a specific file during a commit, add `Ignore-if-chan
 ## Contributing
 
 Contributions to `if-changed` are welcome! Please submit a pull request or create an issue in the GitHub repository.
+
+> This project is free and open-source work by a 501(c)(3) non-profit. If you find it useful, please consider [donating](https://github.com/sponsors/mathematic-inc).

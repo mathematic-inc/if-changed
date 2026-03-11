@@ -76,7 +76,7 @@ impl<'repo> GitEngine<'repo> {
     }
 
     /// Get the diff of a file, if any.
-    fn diff(&self, mut options: impl BorrowMut<git2::DiffOptions>) -> git2::Diff {
+    fn diff(&self, mut options: impl BorrowMut<git2::DiffOptions>) -> git2::Diff<'_> {
         match &self.to_tree {
             Some(to_tree) => self.repository.diff_tree_to_tree(
                 self.from_tree.as_ref(),
@@ -92,7 +92,7 @@ impl<'repo> GitEngine<'repo> {
     }
 
     /// Get the patch of a file, if any.
-    fn patch(&self, path: &Path) -> Option<git2::Patch> {
+    fn patch(&self, path: &Path) -> Option<git2::Patch<'_>> {
         git2::Patch::from_diff(
             &self.diff(
                 git2::DiffOptions::new()
@@ -229,7 +229,7 @@ fn ignore_pathspec(to_ref: Option<&str>, repository: &git2::Repository) -> Optio
     }
 }
 
-fn split_patterns(value: &[u8]) -> impl Iterator<Item = Cow<str>> {
+fn split_patterns(value: &[u8]) -> impl Iterator<Item = Cow<'_, str>> {
     value
         .split_once_str(b"--")
         .unwrap_or((value, b""))
