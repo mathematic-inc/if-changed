@@ -41,7 +41,7 @@ impl Deref for StringRef {
     type Target = str;
 
     fn deref(&self) -> &Self::Target {
-        return unsafe { self.reference.as_ref().unwrap_unchecked() };
+        unsafe { self.reference.as_ref().unwrap_unchecked() }
     }
 }
 
@@ -89,11 +89,7 @@ impl Parser {
     ) -> Result<Parser, io::Error> {
         Ok(Parser {
             path: relpath.as_ref().to_owned(),
-            lines: io::BufReader::new(match fs::File::open(&path) {
-                Ok(file) => file,
-                Err(error) => return Err(error),
-            })
-            .lines(),
+            lines: io::BufReader::new(fs::File::open(&path)?).lines(),
             line: NumberedLine::new(0, String::default()),
             blocks: Vec::new(),
         })
