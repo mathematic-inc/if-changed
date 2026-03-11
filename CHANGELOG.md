@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.4](https://github.com/mathematic-inc/if-changed/compare/v0.3.3...v0.3.4) (2026-03-11)
+
+
+### Bug Fixes
+
+* **deps:** Update rust crate git2 to 0.20.0 [security] ([#274](https://github.com/mathematic-inc/if-changed/issues/274)) ([65c7663](https://github.com/mathematic-inc/if-changed/commit/65c76639acbf305195be3ca2021bf3531b8b4fa9))
+
 ## [0.3.3](https://github.com/mathematic-inc/if-changed/compare/v0.3.2...v0.3.3) (2026-03-11)
 
 
