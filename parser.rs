@@ -1,6 +1,4 @@
 use std::{
-    fs,
-    io::{self, BufRead},
     ops::{Deref, DerefMut},
     path::{Path, PathBuf},
     str::FromStr,
@@ -76,34 +74,32 @@ impl DerefMut for NumberedLine {
 pub(super) struct Parser {
     path: PathBuf,
 
-    lines: io::Lines<io::BufReader<std::fs::File>>,
+    lines: std::vec::IntoIter<String>,
     line: NumberedLine,
 
     blocks: Vec<IfChangedBlock>,
 }
 
 impl Parser {
-    pub(super) fn new(
-        relpath: impl AsRef<Path>,
-        path: impl AsRef<Path>,
-    ) -> Result<Parser, io::Error> {
-        Ok(Parser {
+    pub(super) fn from_source(relpath: impl AsRef<Path>, source: String) -> Parser {
+        Parser {
             path: relpath.as_ref().to_owned(),
-            lines: io::BufReader::new(fs::File::open(&path)?).lines(),
+            lines: source
+                .lines()
+                .map(ToOwned::to_owned)
+                .collect::<Vec<_>>()
+                .into_iter(),
             line: NumberedLine::new(0, String::default()),
             blocks: Vec::new(),
-        })
+        }
     }
 
     fn next_line(&mut self) -> Result<bool, Vec<String>> {
         match self.lines.next() {
-            Some(result) => match result {
-                Ok(line) => {
-                    self.line = NumberedLine::new(self.line.number + 1, line);
-                    Ok(true)
-                }
-                Err(value) => Err(vec![format!("Failed to read {}: {:?}", value, self.path)]),
-            },
+            Some(line) => {
+                self.line = NumberedLine::new(self.line.number + 1, line);
+                Ok(true)
+            }
             None => Ok(false),
         }
     }
@@ -334,21 +330,17 @@ impl Iterator for Parser {
 
 #[cfg(test)]
 mod tests {
-    use std::io::Write;
-
-    use tempfile::NamedTempFile;
-
     use super::Parser;
 
     macro_rules! parser_test {
         ($name:ident, $value:expr, @$exp:literal) => {
             #[test]
             fn $name() {
-                let mut file = NamedTempFile::new().unwrap();
-                writeln!(file, $value).unwrap();
-                insta::assert_compact_json_snapshot!(Parser::new(file.path(), file.path())
-                    .unwrap()
-                    .collect::<Result<Vec<_>, _>>(), @$exp);
+                insta::assert_compact_json_snapshot!(Parser::from_source(
+                    stringify!($name),
+                    format!("{}\n", $value),
+                )
+                .collect::<Result<Vec<_>, _>>(), @$exp);
             }
         };
     }
