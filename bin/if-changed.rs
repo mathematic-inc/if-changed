@@ -247,6 +247,32 @@ mod tests {
     }
 
     #[test]
+    fn test_run_staged_deletion() {
+        let (tempdir, repo) = git_test! {
+            "initial commit": [
+                "a.ts" => indoc! {"
+                    const enum G {
+                        // if-changed
+                        A,
+                        // then-change(b.ts)
+                    }
+                "}
+            ]
+        };
+        std::fs::remove_file(tempdir.path().join("a.ts")).unwrap();
+        let mut index = repo.index().unwrap();
+        index.remove_path(std::path::Path::new("a.ts")).unwrap();
+        index.write().unwrap();
+
+        let repository = git2::Repository::open(tempdir.path()).unwrap();
+        insta::assert_compact_json_snapshot!(run(Cli {
+            from_ref: None,
+            to_ref: None,
+            patterns: vec!["*".into()],
+        }, repository).collect::<Vec<_>>(), @"[]");
+    }
+
+    #[test]
     fn test_run_two_commits() {
         let (tempdir, _repo) = git_test! {
             "initial commit": [
