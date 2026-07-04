@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.6](https://github.com/mathematic-inc/if-changed/compare/v0.3.5...v0.3.6) (2026-07-04)
+
+
+### Bug Fixes
+
+* Check deleted file pragmas ([b94a9c8](https://github.com/mathematic-inc/if-changed/commit/b94a9c81b43c711f2f5e80369ba358db3f854328))
+
 ## [0.3.5](https://github.com/mathematic-inc/if-changed/compare/v0.3.4...v0.3.5) (2026-07-04)
 
 
