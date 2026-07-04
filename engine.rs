@@ -2,6 +2,7 @@ mod git;
 
 use std::{
     collections::BTreeMap,
+    fs, io,
     path::{Path, PathBuf},
 };
 
@@ -21,6 +22,11 @@ pub trait Engine {
     /// Resolve a path to an absolute path.
     fn resolve(&self, path: impl AsRef<Path>) -> PathBuf;
 
+    /// Read the file content that should be checked.
+    fn read_to_string(&self, path: impl AsRef<Path>) -> Result<String, io::Error> {
+        fs::read_to_string(self.resolve(path))
+    }
+
     /// Check if a file has been ignored.
     fn is_ignored(&self, path: impl AsRef<Path>) -> bool;
 
@@ -30,8 +36,8 @@ pub trait Engine {
     /// Check a file for dependent changes.
     fn check(&self, path: impl AsRef<Path>) -> Result<(), Vec<String>> {
         let path = path.as_ref();
-        let parser = match Parser::new(path, self.resolve(path)) {
-            Ok(parser) => parser,
+        let parser = match self.read_to_string(path) {
+            Ok(source) => Parser::from_source(path, source),
             Err(error) => return Err(vec![format!("Could not open {path:?}: {error}")]),
         };
 
@@ -94,8 +100,8 @@ pub trait Engine {
                     };
 
                     // Try to open the file in search of the named block.
-                    let mut parser = match Parser::new(&dependent, self.resolve(&dependent)) {
-                        Ok(parser) => parser,
+                    let mut parser = match self.read_to_string(&dependent) {
+                        Ok(source) => Parser::from_source(&dependent, source),
                         Err(error) => {
                             errors.push(format!(
                                 "Could not open {dependent:?} for \"then-change\" in {path:?} at line {line}: {error:?}"
@@ -242,6 +248,56 @@ mod tests {
             .first()
             .unwrap()
             .contains("Could not open \"a.js\""));
+    }
+
+    #[test]
+    fn test_check_deleted_file_fail() {
+        let (tempdir, repo) = git_test! {
+            "initial commit": [
+                "src/a.js" => indoc!{"
+                    // if-changed
+                    foo
+                    // then-change(b.js)
+                "},
+                "src/b.js" => ""
+            ]
+        };
+        std::fs::remove_file(tempdir.path().join("src/a.js")).unwrap();
+        let mut index = repo.index().unwrap();
+        index.remove_path(Path::new("src/a.js")).unwrap();
+        index.write().unwrap();
+
+        let engine = GitEngine::new(&repo, None, None);
+        assert_eq!(engine.resolve(""), tempdir.path().canonicalize().unwrap());
+
+        insta::assert_compact_json_snapshot!(engine.check(Path::new("src/a.js")), @r###"{"Err": ["Expected \"src/b.js\" to be modified because of \"then-change\" in \"src/a.js\" at line 3."]}"###);
+    }
+
+    #[test]
+    fn test_check_deleted_file_with_deleted_dependency() {
+        let (tempdir, repo) = git_test! {
+            "initial commit": [
+                "src/a.js" => indoc!{"
+                    // if-changed
+                    foo
+                    // then-change(b.js)
+                "},
+                "src/b.js" => ""
+            ]
+        };
+        for path in ["src/a.js", "src/b.js"] {
+            std::fs::remove_file(tempdir.path().join(path)).unwrap();
+        }
+        let mut index = repo.index().unwrap();
+        for path in ["src/a.js", "src/b.js"] {
+            index.remove_path(Path::new(path)).unwrap();
+        }
+        index.write().unwrap();
+
+        let engine = GitEngine::new(&repo, None, None);
+        assert_eq!(engine.resolve(""), tempdir.path().canonicalize().unwrap());
+
+        insta::assert_compact_json_snapshot!(engine.check(Path::new("src/a.js")), @r###"{"Ok": null}"###);
     }
 
     #[test]
