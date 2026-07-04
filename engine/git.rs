@@ -11,6 +11,13 @@ use super::Engine;
 
 const IF_CHANGED_IGNORE_TRAILER: &[u8] = b"ignore-if-changed";
 
+fn checked_path(delta: git2::DiffDelta<'_>) -> Option<PathBuf> {
+    if delta.status() == git2::Delta::Deleted {
+        return None;
+    }
+    delta.new_file().path().map(Path::to_owned)
+}
+
 pub struct GitEngine<'repo> {
     ignore_pathspec: Option<git2::Pathspec>,
     repository: &'repo git2::Repository,
@@ -129,7 +136,9 @@ impl Engine for GitEngine<'_> {
         gen!({
             if patterns.is_empty() {
                 for delta in diff.deltas() {
-                    yield_!(Ok(delta.new_file().path().unwrap().to_owned()))
+                    if let Some(path) = checked_path(delta) {
+                        yield_!(Ok(path))
+                    }
                 }
                 return;
             }
@@ -139,7 +148,9 @@ impl Engine for GitEngine<'_> {
                 .match_diff(&diff, git2::PathspecFlags::FIND_FAILURES)
                 .expect("bare repos are not supported");
             for delta in matches.diff_entries() {
-                yield_!(Ok(delta.new_file().path().unwrap().to_owned()))
+                if let Some(path) = checked_path(delta) {
+                    yield_!(Ok(path))
+                }
             }
             for entry in matches.failed_entries() {
                 yield_!(Err(PathBuf::from_str(&entry.to_str_lossy()).unwrap()))
@@ -333,6 +344,23 @@ mod tests {
         assert_eq!(engine.resolve(""), tempdir.path().canonicalize().unwrap());
 
         insta::assert_compact_json_snapshot!(engine.matches(["";0]).collect::<Vec<_>>(), @r###"[{"Ok": "a"}]"###);
+    }
+
+    #[test]
+    fn test_changes_staged_deletion() {
+        let (tempdir, repo) = git_test! {
+            "initial commit": ["a" => "a"]
+        };
+        std::fs::remove_file(tempdir.path().join("a")).unwrap();
+        let mut index = repo.index().unwrap();
+        index.remove_path(Path::new("a")).unwrap();
+        index.write().unwrap();
+
+        let engine = GitEngine::new(&repo, None, None);
+        assert_eq!(engine.resolve(""), tempdir.path().canonicalize().unwrap());
+
+        insta::assert_compact_json_snapshot!(engine.matches(["";0]).collect::<Vec<_>>(), @"[]");
+        insta::assert_compact_json_snapshot!(engine.matches(["*"]).collect::<Vec<_>>(), @"[]");
     }
 
     #[test]
