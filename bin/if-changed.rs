@@ -247,7 +247,7 @@ mod tests {
     }
 
     #[test]
-    fn test_run_staged_deletion() {
+    fn test_run_staged_deletion_fail() {
         let (tempdir, repo) = git_test! {
             "initial commit": [
                 "a.ts" => indoc! {"
@@ -256,12 +256,44 @@ mod tests {
                         A,
                         // then-change(b.ts)
                     }
-                "}
+                "},
+                "b.ts" => ""
             ]
         };
         std::fs::remove_file(tempdir.path().join("a.ts")).unwrap();
         let mut index = repo.index().unwrap();
         index.remove_path(std::path::Path::new("a.ts")).unwrap();
+        index.write().unwrap();
+
+        let repository = git2::Repository::open(tempdir.path()).unwrap();
+        insta::assert_compact_json_snapshot!(run(Cli {
+            from_ref: None,
+            to_ref: None,
+            patterns: vec!["*".into()],
+        }, repository).collect::<Vec<_>>(), @r###"["Expected \"b.ts\" to be modified because of \"then-change\" in \"a.ts\" at line 4."]"###);
+    }
+
+    #[test]
+    fn test_run_staged_deletion_with_deleted_dependency() {
+        let (tempdir, repo) = git_test! {
+            "initial commit": [
+                "a.ts" => indoc! {"
+                    const enum G {
+                        // if-changed
+                        A,
+                        // then-change(b.ts)
+                    }
+                "},
+                "b.ts" => ""
+            ]
+        };
+        for path in ["a.ts", "b.ts"] {
+            std::fs::remove_file(tempdir.path().join(path)).unwrap();
+        }
+        let mut index = repo.index().unwrap();
+        for path in ["a.ts", "b.ts"] {
+            index.remove_path(std::path::Path::new(path)).unwrap();
+        }
         index.write().unwrap();
 
         let repository = git2::Repository::open(tempdir.path()).unwrap();

@@ -1,5 +1,6 @@
 use std::{
     borrow::{BorrowMut, Cow},
+    fs, io,
     path::{Path, PathBuf, MAIN_SEPARATOR_STR},
     str::FromStr as _,
 };
@@ -11,11 +12,12 @@ use super::Engine;
 
 const IF_CHANGED_IGNORE_TRAILER: &[u8] = b"ignore-if-changed";
 
-fn checked_path(delta: git2::DiffDelta<'_>) -> Option<PathBuf> {
-    if delta.status() == git2::Delta::Deleted {
-        return None;
+fn changed_path(delta: git2::DiffDelta<'_>) -> Option<PathBuf> {
+    match delta.status() {
+        git2::Delta::Deleted => delta.old_file().path(),
+        _ => delta.new_file().path(),
     }
-    delta.new_file().path().map(Path::to_owned)
+    .map(Path::to_owned)
 }
 
 pub struct GitEngine<'repo> {
@@ -111,6 +113,38 @@ impl<'repo> GitEngine<'repo> {
         .ok()
         .flatten()
     }
+
+    fn is_deleted(&self, path: &Path) -> bool {
+        self.patch(path)
+            .is_some_and(|patch| patch.delta().status() == git2::Delta::Deleted)
+    }
+
+    fn read_old_blob(&self, path: &Path) -> Result<String, io::Error> {
+        let tree = self.from_tree.as_ref().ok_or_else(|| {
+            io::Error::new(
+                io::ErrorKind::NotFound,
+                format!("no base tree contains {}", path.display()),
+            )
+        })?;
+        let entry = tree.get_path(path).map_err(|error| {
+            io::Error::new(
+                io::ErrorKind::NotFound,
+                format!("could not find {} in base tree: {error}", path.display()),
+            )
+        })?;
+        let blob = entry
+            .to_object(self.repository)
+            .and_then(|object| object.peel_to_blob())
+            .map_err(|error| {
+                io::Error::new(
+                    io::ErrorKind::InvalidData,
+                    format!("could not read {} from base tree: {error}", path.display()),
+                )
+            })?;
+        std::str::from_utf8(blob.content())
+            .map(str::to_owned)
+            .map_err(|error| io::Error::new(io::ErrorKind::InvalidData, error))
+    }
 }
 
 impl Engine for GitEngine<'_> {
@@ -136,7 +170,7 @@ impl Engine for GitEngine<'_> {
         gen!({
             if patterns.is_empty() {
                 for delta in diff.deltas() {
-                    if let Some(path) = checked_path(delta) {
+                    if let Some(path) = changed_path(delta) {
                         yield_!(Ok(path))
                     }
                 }
@@ -148,7 +182,7 @@ impl Engine for GitEngine<'_> {
                 .match_diff(&diff, git2::PathspecFlags::FIND_FAILURES)
                 .expect("bare repos are not supported");
             for delta in matches.diff_entries() {
-                if let Some(path) = checked_path(delta) {
+                if let Some(path) = changed_path(delta) {
                     yield_!(Ok(path))
                 }
             }
@@ -168,6 +202,15 @@ impl Engine for GitEngine<'_> {
             .join(path.as_ref())
     }
 
+    fn read_to_string(&self, path: impl AsRef<Path>) -> Result<String, io::Error> {
+        let path = path.as_ref();
+        if self.is_deleted(path) {
+            self.read_old_blob(path)
+        } else {
+            fs::read_to_string(self.resolve(path))
+        }
+    }
+
     fn is_ignored(&self, path: impl AsRef<Path>) -> bool {
         let Some(pathspec) = &self.ignore_pathspec else {
             return false;
@@ -183,13 +226,7 @@ impl Engine for GitEngine<'_> {
         if patch.delta().status() == git2::Delta::Untracked {
             return true;
         }
-        for (hunk_index, hunk) in (0..patch.num_hunks()).map(|i| (i, patch.hunk(i).unwrap().0)) {
-            if usize::try_from(hunk.new_start()).unwrap() > range.1 {
-                break;
-            }
-            if usize::try_from(hunk.new_start() + hunk.new_lines()).unwrap() < range.0 {
-                continue;
-            }
+        for hunk_index in 0..patch.num_hunks() {
             for line in (0..patch.num_lines_in_hunk(hunk_index).unwrap())
                 .map(|i| patch.line_in_hunk(hunk_index, i).unwrap())
             {
@@ -359,8 +396,8 @@ mod tests {
         let engine = GitEngine::new(&repo, None, None);
         assert_eq!(engine.resolve(""), tempdir.path().canonicalize().unwrap());
 
-        insta::assert_compact_json_snapshot!(engine.matches(["";0]).collect::<Vec<_>>(), @"[]");
-        insta::assert_compact_json_snapshot!(engine.matches(["*"]).collect::<Vec<_>>(), @"[]");
+        insta::assert_compact_json_snapshot!(engine.matches(["";0]).collect::<Vec<_>>(), @r###"[{"Ok": "a"}]"###);
+        insta::assert_compact_json_snapshot!(engine.matches(["*"]).collect::<Vec<_>>(), @r###"[{"Ok": "a"}]"###);
     }
 
     #[test]
