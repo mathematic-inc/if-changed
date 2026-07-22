@@ -37,7 +37,7 @@ fn run(cli: Cli, repository: git2::Repository) -> impl Iterator<Item = String> {
             let Ok(path) = result else {
                 continue;
             };
-            if engine.is_ignored(&path) {
+            if engine.is_ignored(&path) || engine.resolve(&path).is_dir() {
                 continue;
             }
             if let Err(errors) = engine.check(path) {
@@ -221,6 +221,35 @@ mod tests {
             from_ref: None,
             to_ref: None,
             patterns: vec![],
+        }, repository).collect::<Vec<_>>(), @"[]");
+    }
+
+    #[test]
+    fn test_run_skips_untracked_directory() {
+        let (tempdir, _repo) = git_test! {
+            working: [
+                "untracked/a.ts" => indoc! {"
+                    const enum G {
+                        // if-changed
+                        A,
+                        // then-change(b.ts)
+                    }
+                "},
+                "untracked/b.ts" => indoc! {"
+                    const enum G {
+                        // if-changed
+                        A,
+                        // then-change(a.ts)
+                    }
+                "}
+            ]
+        };
+
+        let repository = git2::Repository::open(tempdir.path()).unwrap();
+        insta::assert_compact_json_snapshot!(run(Cli {
+            from_ref: None,
+            to_ref: None,
+            patterns: vec!["*".into()],
         }, repository).collect::<Vec<_>>(), @"[]");
     }
 
