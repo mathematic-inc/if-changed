@@ -1,5 +1,50 @@
 # Changelog
 
+## [0.4.0](https://github.com/mathematic-inc/if-changed/compare/v0.3.7...v0.4.0) (2026-08-23)
+
+
+### ⚠ BREAKING CHANGES
+
+* reverse pattern matching
+* allow pathspec for files
+
+### Features
+
+* Allow pathspec for files ([cc0c7bb](https://github.com/mathematic-inc/if-changed/commit/cc0c7bbac95091d03dc54471f7a3b4839eff75a9))
+* Initial commit ([8377a79](https://github.com/mathematic-inc/if-changed/commit/8377a790f561b98807d54238f39ab724b2278b74))
+* Reverse pattern matching ([83ef2c8](https://github.com/mathematic-inc/if-changed/commit/83ef2c843f20a9f810b77d4df15460baffe44df6))
+
+
+### Bug Fixes
+
+* Allow missing `from-ref` ([#8](https://github.com/mathematic-inc/if-changed/issues/8)) ([dc44e5d](https://github.com/mathematic-inc/if-changed/commit/dc44e5d9234476ad540935730840a6ed94fe5d32))
+* Allow missing HEAD ([322b95a](https://github.com/mathematic-inc/if-changed/commit/322b95a7ac4f855f94d49c32f4d0b165f3a9ad4c))
+* Check deleted file pragmas ([f63ae2b](https://github.com/mathematic-inc/if-changed/commit/f63ae2bf839701e856e9126c9d88568a9115e38e))
+* **deps:** Update cargo ([#29](https://github.com/mathematic-inc/if-changed/issues/29)) ([2216d27](https://github.com/mathematic-inc/if-changed/commit/2216d279ce3291a53732ef44636c4a25a2b6d183))
+* **deps:** Update rust crate bstr to v1.10.0 ([#160](https://github.com/mathematic-inc/if-changed/issues/160)) ([191697d](https://github.com/mathematic-inc/if-changed/commit/191697d9d9efd80dcb392d7e2317d21528eea21c))
+* **deps:** Update rust crate clap to v4.5.10 ([#153](https://github.com/mathematic-inc/if-changed/issues/153)) ([e0cd360](https://github.com/mathematic-inc/if-changed/commit/e0cd3606fe7c0ef0d503ff670ed5e2a74f8fbcff))
+* **deps:** Update rust crate clap to v4.5.11 ([#156](https://github.com/mathematic-inc/if-changed/issues/156)) ([3820278](https://github.com/mathematic-inc/if-changed/commit/382027806e2a905402677f817a0f27e3ebe059a5))
+* **deps:** Update rust crate clap to v4.5.12 ([#175](https://github.com/mathematic-inc/if-changed/issues/175)) ([dc488ab](https://github.com/mathematic-inc/if-changed/commit/dc488ab921c75d017bda6de79d9e9a934e234105))
+* **deps:** Update rust crate clap to v4.5.13 ([#176](https://github.com/mathematic-inc/if-changed/issues/176)) ([ce8b0c5](https://github.com/mathematic-inc/if-changed/commit/ce8b0c55286bdea0f22ccc6da39714c48aa8854d))
+* **deps:** Update rust crate clap to v4.5.14 ([#190](https://github.com/mathematic-inc/if-changed/issues/190)) ([43dc86a](https://github.com/mathematic-inc/if-changed/commit/43dc86a5596a44a9c91f00b167b13b244deae3fd))
+* **deps:** Update rust crate clap to v4.5.15 ([#192](https://github.com/mathematic-inc/if-changed/issues/192)) ([d0de4b3](https://github.com/mathematic-inc/if-changed/commit/d0de4b323a2150c887cbf1598c18a9f414c86b55))
+* **deps:** Update rust crate clap to v4.5.16 ([#204](https://github.com/mathematic-inc/if-changed/issues/204)) ([a78c405](https://github.com/mathematic-inc/if-changed/commit/a78c40535c0a603551f5f3f4b278ce59a8349287))
+* **deps:** Update rust crate clap to v4.5.18 ([#264](https://github.com/mathematic-inc/if-changed/issues/264)) ([2e9ddfd](https://github.com/mathematic-inc/if-changed/commit/2e9ddfdc62d1df3f4fe76524788a37af1e4efdcb))
+* **deps:** Update rust crate clap to v4.5.5 ([#69](https://github.com/mathematic-inc/if-changed/issues/69)) ([a0aa685](https://github.com/mathematic-inc/if-changed/commit/a0aa6851486453da301d04b0e806cbc309f3cfb4))
+* **deps:** Update rust crate clap to v4.5.6 ([#70](https://github.com/mathematic-inc/if-changed/issues/70)) ([fc8d6d1](https://github.com/mathematic-inc/if-changed/commit/fc8d6d1a8df78da216adf4f08552ac41c8cd5d59))
+* **deps:** Update rust crate clap to v4.5.7 ([#78](https://github.com/mathematic-inc/if-changed/issues/78)) ([330338b](https://github.com/mathematic-inc/if-changed/commit/330338b464d77e07020234ab8c967e165f3f5541))
+* **deps:** Update rust crate clap to v4.5.8 ([#121](https://github.com/mathematic-inc/if-changed/issues/121)) ([8247bbc](https://github.com/mathematic-inc/if-changed/commit/8247bbcf7d5e1d9c6f7a7baa64775cdcfd5bfa9d))
+* **deps:** Update rust crate clap to v4.5.9 ([#132](https://github.com/mathematic-inc/if-changed/issues/132)) ([9eb0029](https://github.com/mathematic-inc/if-changed/commit/9eb0029cc479038e51d2cc2a51602ed34e9f5f11))
+* **deps:** Update rust crate git2 to 0.19.0 ([#89](https://github.com/mathematic-inc/if-changed/issues/89)) ([75c3646](https://github.com/mathematic-inc/if-changed/commit/75c3646cc174ce7a9c38f92eb9bf40d674339d8c))
+* **deps:** Update rust crate git2 to 0.20.0 [security] ([#274](https://github.com/mathematic-inc/if-changed/issues/274)) ([cea82c7](https://github.com/mathematic-inc/if-changed/commit/cea82c7ce1cecf9759a33ccdfc642b05421a0575))
+* **deps:** Update rust crate git2 to 0.21.0 ([#340](https://github.com/mathematic-inc/if-changed/issues/340)) ([fbcc105](https://github.com/mathematic-inc/if-changed/commit/fbcc1053375b1f382f4cc7a0afd4513d21f862eb))
+* Include untracked files ([88969c9](https://github.com/mathematic-inc/if-changed/commit/88969c96533bda683302d5a5d2eb3e2199d9a5d3))
+* Overhaul CI workflows, update license to Apache-2.0 only, and minor code cleanup ([#275](https://github.com/mathematic-inc/if-changed/issues/275)) ([ca574be](https://github.com/mathematic-inc/if-changed/commit/ca574be65438fd4d3faaaf47580c1c161c48e2d5))
+* Read pre-commit refs from env ([049c387](https://github.com/mathematic-inc/if-changed/commit/049c38740e6c9657e9fa8a8d9c2dae88ea27f315))
+* **release:** Add missing toolchain input to rust-toolchain steps ([#277](https://github.com/mathematic-inc/if-changed/issues/277)) ([aba1140](https://github.com/mathematic-inc/if-changed/commit/aba11405ee3585a1d2fc781fc04fbe89e8609e8b))
+* Skip changed directories ([#413](https://github.com/mathematic-inc/if-changed/issues/413)) ([2e4bddc](https://github.com/mathematic-inc/if-changed/commit/2e4bddcc667f726d0de836fc5e141e7586003b96))
+* Skip deleted diff paths ([1eb334d](https://github.com/mathematic-inc/if-changed/commit/1eb334d52286ca88d74c36d29901af2412de8881))
+
 ## [0.3.7](https://github.com/mathematic-inc/if-changed/compare/v0.3.6...v0.3.7) (2026-07-22)
 
 
