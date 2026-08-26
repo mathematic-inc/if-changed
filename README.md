@@ -162,6 +162,10 @@ To disable `if-changed` for a specific file during a commit, add `Ignore-if-chan
 
 ## Contributing
 
-Contributions to `if-changed` are welcome! Please submit a pull request or create an issue in the GitHub repository.
+AI agents handle most maintenance and implementation for this repository. For us, reviewing an unsolicited pull request takes longer than implementing a proposal after we have agreed on it.
+
+[Start a Discussion](../../discussions/new) and wait for a maintainer to review the proposal before doing implementation work. If we accept it, a Mathematic maintainer or agent will open the pull request. Only organization members, repository collaborators, and approved maintenance bots may open pull requests; the repository closes other pull requests.
+
+Read [CONTRIBUTING.md](CONTRIBUTING.md) for the full policy.
 
 > This project is free and open-source work by a 501(c)(3) non-profit. If you find it useful, please consider [donating](https://github.com/sponsors/mathematic-inc).
