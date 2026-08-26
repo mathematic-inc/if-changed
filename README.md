@@ -166,6 +166,8 @@ AI agents handle most maintenance and implementation for this repository. For us
 
 [Start a Discussion](../../discussions/new) and wait for a maintainer to review the proposal before doing implementation work. If we accept it, a Mathematic maintainer or agent will open the pull request. GitHub restricts pull request creation to Mathematic maintainers and repository collaborators who have write, maintain, or admin access, plus authorized maintenance agents.
 
+When Mathematic implements a proposal, we will link the implementation pull request to the Discussion and credit the original author.
+
 Read [CONTRIBUTING.md](CONTRIBUTING.md) for the full policy.
 
 > This project is free and open-source work by a 501(c)(3) non-profit. If you find it useful, please consider [donating](https://github.com/sponsors/mathematic-inc).
