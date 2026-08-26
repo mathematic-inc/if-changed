@@ -2,7 +2,7 @@
 
 [![crates.io](https://img.shields.io/crates/v/if-changed?style=flat-square)](https://crates.io/crates/if-changed)
 [![license](https://img.shields.io/crates/l/if-changed?style=flat-square)](https://github.com/mathematic-inc/if-changed)
-[![ci](https://img.shields.io/github/actions/workflow/status/mathematic-inc/if-changed/ci.yaml?label=ci&style=flat-square)](https://github.com/mathematic-inc/if-changed/actions/workflows/ci.yaml)
+[![ci](https://img.shields.io/github/actions/workflow/status/mathematic-inc/if-changed/ci.yml?label=ci&style=flat-square)](https://github.com/mathematic-inc/if-changed/actions/workflows/ci.yml)
 [![docs](https://img.shields.io/docsrs/if-changed?style=flat-square)](https://docs.rs/if-changed/latest/if_changed/index.html)
 
 `if-changed` is a command-line utility that checks for `"if-changed"` and `"then-change"` comments in a repository diff and errors if dependent files need changes.
@@ -100,11 +100,11 @@ This is where `if-changed` comes in. Instead of the above, suppose we have:
 +// then-change(lib.rs:ecrs)
 ```
 
-Once this is commited, the next time `lib.rs` (or `lib.ts`) is changed in the lines surrounded by `"if-changed"` and `"then-change"`, `if-changed` will error if the other file (referenced in the `"then-change"` comment) does not have any changes in the corresponding named block.
+Once this is committed, the next time `lib.rs` (or `lib.ts`) is changed in the lines surrounded by `"if-changed"` and `"then-change"`, `if-changed` will error if the other file (referenced in the `"then-change"` comment) does not have any changes in the corresponding named block.
 
 > [!TIP]
 >
-> If you just want to assert that any change in a file is ok, then just reference the file without the name. For example,
+> If you just want to assert that any change in a file is okay, then just reference the file without the name. For example,
 >
 > ```diff
 >  // lib.ts
@@ -148,7 +148,7 @@ If a path is too long, you can use a shell continuation `\` to split it across m
 
 ### Disabling `if-changed`
 
-To disable `if-changed` for a specific file during a commit, add `Ignore-if-changed: <path>, ... -- [REASON]` to the commit footer. Here, `<path>` should be the file path. In general, `<path>` can be any pattern allowed by [fnmatch](https://man7.org/linux/man-pages/man3/fnmatch.3.html).
+To disable `if-changed` for a specific file during a commit, add `Ignore-if-changed: <path>, ... -- [REASON]` to the commit footer. Here, `<path>` names the file. In general, `<path>` can be any pattern allowed by [fnmatch](https://man7.org/linux/man-pages/man3/fnmatch.3.html).
 
 > [!NOTE]
 >
@@ -164,7 +164,7 @@ To disable `if-changed` for a specific file during a commit, add `Ignore-if-chan
 
 AI agents handle most maintenance and implementation for this repository. For us, reviewing an unsolicited pull request takes longer than implementing a proposal after we have agreed on it.
 
-[Start a Discussion](../../discussions/new) and wait for a maintainer to review the proposal before doing implementation work. If we accept it, a Mathematic maintainer or agent will open the pull request. GitHub restricts pull request creation to Mathematic maintainers and repository collaborators who have write, maintain, or admin access, plus authorized maintenance agents.
+[Start a Discussion](https://github.com/mathematic-inc/if-changed/discussions/new) and wait for a maintainer to review the proposal before doing implementation work. If we accept it, a Mathematic maintainer or agent will open the pull request. GitHub restricts pull request creation to Mathematic maintainers and repository collaborators who have write, maintain, or admin access, plus authorized maintenance agents.
 
 When Mathematic implements a proposal, we will link the implementation pull request to the Discussion and credit the original author.
 
