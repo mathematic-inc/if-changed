@@ -2,20 +2,17 @@
 
 ## [0.3.7](https://github.com/mathematic-inc/if-changed/compare/v0.3.6...v0.3.7) (2026-07-22)
 
-
 ### Bug Fixes
 
 * Skip changed directories ([#413](https://github.com/mathematic-inc/if-changed/issues/413)) ([edff21e](https://github.com/mathematic-inc/if-changed/commit/edff21e429533a29594bfb6c28bba02946f48b7a))
 
 ## [0.3.6](https://github.com/mathematic-inc/if-changed/compare/v0.3.5...v0.3.6) (2026-07-04)
 
-
 ### Bug Fixes
 
 * Check deleted file pragmas ([b94a9c8](https://github.com/mathematic-inc/if-changed/commit/b94a9c81b43c711f2f5e80369ba358db3f854328))
 
 ## [0.3.5](https://github.com/mathematic-inc/if-changed/compare/v0.3.4...v0.3.5) (2026-07-04)
-
 
 ### Bug Fixes
 
@@ -24,13 +21,11 @@
 
 ## [0.3.4](https://github.com/mathematic-inc/if-changed/compare/v0.3.3...v0.3.4) (2026-03-11)
 
-
 ### Bug Fixes
 
 * **deps:** Update rust crate git2 to 0.20.0 [security] ([#274](https://github.com/mathematic-inc/if-changed/issues/274)) ([65c7663](https://github.com/mathematic-inc/if-changed/commit/65c76639acbf305195be3ca2021bf3531b8b4fa9))
 
 ## [0.3.3](https://github.com/mathematic-inc/if-changed/compare/v0.3.2...v0.3.3) (2026-03-11)
-
 
 ### Bug Fixes
 
@@ -46,10 +41,10 @@
 * **deps:** Update rust crate clap to v4.5.8 ([#121](https://github.com/mathematic-inc/if-changed/issues/121)) ([e217226](https://github.com/mathematic-inc/if-changed/commit/e217226d22efeb7477cfc9bc6e4b899d3d6be042))
 * **deps:** Update rust crate clap to v4.5.9 ([#132](https://github.com/mathematic-inc/if-changed/issues/132)) ([f4eb9bf](https://github.com/mathematic-inc/if-changed/commit/f4eb9bf50310efb46fd4b8bae5a6cbb8ad1b8253))
 * **deps:** Update rust crate git2 to 0.19.0 ([#89](https://github.com/mathematic-inc/if-changed/issues/89)) ([130f53a](https://github.com/mathematic-inc/if-changed/commit/130f53a2e5bd3e971543bfe8ec9cd4a5d69a0732))
-* Overhaul CI workflows, update license to Apache-2.0 only, and minor code cleanup ([#275](https://github.com/mathematic-inc/if-changed/issues/275)) ([8ca9947](https://github.com/mathematic-inc/if-changed/commit/8ca9947b965819d03298f0d0ec6a78bf73783a51))
+* Overhaul CI workflows, update license to Apache-2.0 only, and minor code cleanup
+  ([#275](https://github.com/mathematic-inc/if-changed/issues/275)) ([8ca9947](https://github.com/mathematic-inc/if-changed/commit/8ca9947b965819d03298f0d0ec6a78bf73783a51))
 
 ## [0.3.2](https://github.com/mathematic-inc/if-changed/compare/v0.3.1...v0.3.2) (2024-06-13)
-
 
 ### Bug Fixes
 
@@ -60,13 +55,11 @@
 
 ## [0.3.1](https://github.com/mathematic-inc/if-changed/compare/v0.3.0...v0.3.1) (2024-04-21)
 
-
 ### Bug Fixes
 
 * Allow missing `from-ref` ([#8](https://github.com/mathematic-inc/if-changed/issues/8)) ([e0eea9b](https://github.com/mathematic-inc/if-changed/commit/e0eea9b6a0f516b5ac77a60b7d6d9e52d208dffa))
 
 ## [0.3.0](https://github.com/mathematic-inc/if-changed/compare/v0.2.0...v0.3.0) (2024-04-20)
-
 
 ### ⚠ BREAKING CHANGES
 
@@ -78,7 +71,6 @@
 
 ## [0.2.0](https://github.com/mathematic-inc/if-changed/compare/v0.1.0...v0.2.0) (2024-04-19)
 
-
 ### ⚠ BREAKING CHANGES
 
 * allow pathspec for files
@@ -87,7 +79,6 @@
 
 * Allow pathspec for files ([5df28a6](https://github.com/mathematic-inc/if-changed/commit/5df28a6ade078a827140fe76d33da3e4a4d65c1d))
 
-
 ### Bug Fixes
 
 * Allow missing HEAD ([81d5c2e](https://github.com/mathematic-inc/if-changed/commit/81d5c2ea0f9497fc7e778059808f8dac37257795))
@@ -95,7 +86,6 @@
 * Read pre-commit refs from env ([0a1e5db](https://github.com/mathematic-inc/if-changed/commit/0a1e5db64749a04ff1f6bf9b19f5d7221a8d7e68))
 
 ## 0.1.0 (2024-04-19)
-
 
 ### Features
 
