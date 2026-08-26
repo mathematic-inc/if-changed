@@ -164,7 +164,7 @@ To disable `if-changed` for a specific file during a commit, add `Ignore-if-chan
 
 AI agents handle most maintenance and implementation for this repository. For us, reviewing an unsolicited pull request takes longer than implementing a proposal after we have agreed on it.
 
-[Start a Discussion](../../discussions/new) and wait for a maintainer to review the proposal before doing implementation work. If we accept it, a Mathematic maintainer or agent will open the pull request. Only organization members, repository collaborators, and approved maintenance bots may open pull requests; the repository closes other pull requests.
+[Start a Discussion](../../discussions/new) and wait for a maintainer to review the proposal before doing implementation work. If we accept it, a Mathematic maintainer or agent will open the pull request. GitHub restricts pull request creation to Mathematic maintainers and repository collaborators who have write, maintain, or admin access, plus authorized maintenance agents.
 
 Read [CONTRIBUTING.md](CONTRIBUTING.md) for the full policy.
 
