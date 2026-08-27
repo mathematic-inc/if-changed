@@ -19,3 +19,9 @@ Install the pinned tools with `mise install`. Run the same Clippy check as CI wi
 ```sh
 mise exec -- cargo clippy --workspace --all-features --all-targets -- -D warnings
 ```
+
+The minimum supported Rust version is 1.87. Check it with:
+
+```sh
+rustup run 1.87 cargo check --locked --workspace --all-features --all-targets
+```

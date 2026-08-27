@@ -9,15 +9,36 @@ on:
 permissions:
   contents: read
 
+env:
+  MSRV: "1.87"
+
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  ci:
-    name: CI
+  msrv:
+    name: MSRV
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install MSRV
+        run: rustup toolchain install "$MSRV" --profile minimal
+      - name: Check MSRV
+        run: rustup run "$MSRV" cargo check --locked --workspace --all-features --all-targets
+
+  ci:
+    name: CI
+    needs: msrv
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
