@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.8](https://github.com/mathematic-inc/if-changed/compare/v0.3.7...v0.3.8) (2026-08-27)
+
+
+### Bug Fixes
+
+* Support Rust 1.87 ([451407d](https://github.com/mathematic-inc/if-changed/commit/451407deb943f42364364289663ffce4c4d4ffac))
+
 ## [0.3.7](https://github.com/mathematic-inc/if-changed/compare/v0.3.6...v0.3.7) (2026-07-22)
 
 ### Bug Fixes
