@@ -2,6 +2,7 @@
 name = "if-changed"
 version = "0.3.7"
 edition = "2021"
+rust-version = "1.87"
 description = "A pre-submit for file changes."
 license = "Apache-2.0"
 authors = ["Mathematic Inc"]
