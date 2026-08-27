@@ -58,14 +58,6 @@ jobs:
           prerelease: ${{ contains(github.ref_name, '-') }}
           make_latest: ${{ !contains(github.ref_name, '-') }}
 
-      - name: Trigger release notes workflow
-        env:
-          GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
-          RELEASE_TAG: ${{ github.ref_name }}
-        run: |
-          gh workflow run release-notes.yml \
-            --field tag="$RELEASE_TAG"
-
   publish-crate:
     name: Publish to crates.io
     needs:
