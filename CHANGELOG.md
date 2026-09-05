@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.9](https://github.com/mathematic-inc/if-changed/compare/v0.3.8...v0.3.9) (2026-09-05)
+
+
+### Bug Fixes
+
+* **ci:** Harden release workflows and repository checks ([#448](https://github.com/mathematic-inc/if-changed/issues/448)) ([c7831ba](https://github.com/mathematic-inc/if-changed/commit/c7831ba1f9388347c9139141f24033a78e2f3e21))
+
 ## [0.3.8](https://github.com/mathematic-inc/if-changed/compare/v0.3.7...v0.3.8) (2026-08-27)
 
 

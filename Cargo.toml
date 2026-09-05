@@ -1,6 +1,6 @@
 [package]
 name = "if-changed"
-version = "0.3.8"
+version = "0.3.9"
 edition = "2021"
 rust-version = "1.87"
 description = "A pre-submit for file changes."
