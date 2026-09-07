@@ -2,4 +2,3 @@ target
 *.pending-snap
 cobertura.xml
 /dist/
-__pycache__/
