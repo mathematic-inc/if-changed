@@ -48,3 +48,9 @@ jobs:
         run: cargo test --workspace --all-features --all-targets
       - name: Verify package
         run: cargo package --locked
+
+  prebuilt:
+    permissions:
+      contents: read
+    name: Verify prebuilt distribution
+    uses: ./.github/workflows/prebuilt.yml
