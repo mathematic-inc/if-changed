@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.10](https://github.com/mathematic-inc/if-changed/compare/v0.3.9...v0.3.10) (2026-09-07)
+
+
+### Bug Fixes
+
+* **release:** Publish native binaries for all supported platforms ([#450](https://github.com/mathematic-inc/if-changed/issues/450)) ([963e33d](https://github.com/mathematic-inc/if-changed/commit/963e33d473b6b9865af8d46d790bc72a5b5694f9))
+
 ## [0.3.9](https://github.com/mathematic-inc/if-changed/compare/v0.3.8...v0.3.9) (2026-09-05)
 
 
