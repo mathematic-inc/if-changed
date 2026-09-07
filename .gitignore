@@ -1,3 +1,4 @@
 target
 *.pending-snap
 cobertura.xml
+/dist/

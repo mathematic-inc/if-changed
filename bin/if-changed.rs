@@ -52,6 +52,7 @@ fn run(cli: Cli, repository: git2::Repository) -> impl Iterator<Item = String> {
 
 #[cfg_attr(coverage_nightly, coverage(off))]
 fn main() -> ExitCode {
+    let cli = Cli::parse();
     let mut has_error = false;
     let repository = match git2::Repository::open_from_env() {
         Ok(repository) => repository,
@@ -60,7 +61,7 @@ fn main() -> ExitCode {
             return ExitCode::FAILURE;
         }
     };
-    for error in run(Cli::parse(), repository) {
+    for error in run(cli, repository) {
         has_error = true;
         eprintln!("{error}");
     }
