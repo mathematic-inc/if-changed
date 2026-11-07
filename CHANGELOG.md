@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.11](https://github.com/mathematic-inc/if-changed/compare/v0.3.10...v0.3.11) (2026-11-07)
+
+
+### Bug Fixes
+
+* **deps:** Update dependencies across the stack ([#467](https://github.com/mathematic-inc/if-changed/issues/467)) ([81925d4](https://github.com/mathematic-inc/if-changed/commit/81925d448ab9269f1196bb3b6593f31c470a5ded))
+
 ## [0.3.10](https://github.com/mathematic-inc/if-changed/compare/v0.3.9...v0.3.10) (2026-09-07)
 
 
