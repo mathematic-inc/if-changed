@@ -37,7 +37,7 @@ jobs:
     permissions:
       contents: read
     needs: build-artifacts
-    uses: ./.github/workflows/prebuilt.yml # zizmor: ignore[self-repository] -- actionlint requires relative paths.
+    uses: $/.github/workflows/prebuilt.yml
 
   create-release:
     name: Publish GitHub Release
@@ -113,6 +113,6 @@ jobs:
       contents: read
     name: Verify published installations
     needs: [publish-crate]
-    uses: ./.github/workflows/prebuilt.yml # zizmor: ignore[self-repository] -- actionlint requires relative paths.
+    uses: $/.github/workflows/prebuilt.yml
     with:
       verify-install: true

@@ -4,11 +4,10 @@ version = "0.3.10"
 edition = "2021"
 rust-version = "1.87"
 description = "A pre-submit for file changes."
-license = "Apache-2.0"
-authors = ["Mathematic Inc"]
 repository = "https://github.com/mathematic-inc/if-changed"
-categories = ["command-line-utilities", "development-tools", "filesystem"]
+license = "Apache-2.0"
 keywords = ["ci", "git", "hooks", "pre-submit", "presubmit"]
+categories = ["command-line-utilities", "development-tools", "filesystem"]
 
 [package.metadata.binstall]
 pkg-url = "{ repo }/releases/download/v{ version }/{ name }-{ version }-{ target }.tar.gz"
