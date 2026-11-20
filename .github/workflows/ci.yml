@@ -4,53 +4,96 @@ on:
   push:
     branches: [main]
   pull_request:
-    branches: [main]
 
-permissions:
-  contents: read
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions: {}
 
 env:
   MSRV: "1.87"
 
-concurrency:
-  group: ci-${{ github.ref }}
-  cancel-in-progress: true
-
 jobs:
-  msrv:
-    name: MSRV
+  check:
+    name: Check
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Install tools
+        uses: jdx/mise-action@b44d12e7d0d8ee7461bb893e1b1993500433185b # v5.2.7
+      - name: Check and generate ToolConfig files
+        uses: mathematic-inc/toolconfig-action@1baf7b021e8bf6f0e20737753c13af0fc93c8570 # v2026.11.0
+      - name: Run checks
+        run: hk check --all --slow --skip-step toolconfig
+
+  check-msrv:
+    name: Check MSRV
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - name: Install MSRV
+      - name: Install MSRV toolchain
         run: rustup toolchain install "$MSRV" --profile minimal
-      - name: Check MSRV
+      - name: Check workspace on MSRV
         run: rustup run "$MSRV" cargo check --locked --workspace --all-features --all-targets
 
-  ci:
-    name: CI
-    needs: msrv
+  test:
+    name: Test
+    needs:
+      - check-msrv
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: jdx/mise-action@b44d12e7d0d8ee7461bb893e1b1993500433185b # v5.2.7
-      - name: Test
+      - name: Install tools
+        uses: jdx/mise-action@b44d12e7d0d8ee7461bb893e1b1993500433185b # v5.2.7
+      - name: Run tests
         run: cargo test --workspace --all-features --all-targets
       - name: Verify package
         run: cargo package --locked
 
   prebuilt:
+    name: Prebuilt
     permissions:
       contents: read
-    name: Verify prebuilt distribution
     uses: $/.github/workflows/prebuilt.yml
+
+  required:
+    name: required
+    if: always()
+    needs:
+      - check
+      - check-msrv
+      - test
+      - prebuilt
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions: {}
+    steps:
+      - name: Check every other job passed
+        env:
+          NEEDS: ${{ toJSON(needs) }}
+        run: |
+          jq -r 'to_entries[] | "\(.key): \(.value.result)"' <<< "$NEEDS"
+          if ! jq -e 'all(.[]; .result == "success" or .result == "skipped")' <<< "$NEEDS" > /dev/null; then
+            echo "::error::A job failed or was cancelled."
+            exit 1
+          fi
