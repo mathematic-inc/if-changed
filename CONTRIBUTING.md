@@ -22,12 +22,15 @@ maintenance agents.
 
 ## Development
 
-Install the pinned tools with `mise install`. Run the same Clippy check as CI
-with:
+Install the pinned tools with `mise install`. Run the checks that CI runs with:
 
 ```sh
-mise exec -- cargo clippy --workspace --all-features --all-targets -- -D warnings
+mise run check
 ```
+
+Fix what the tools can fix with `mise run fix`. ToolConfig writes the settings
+files of the tools. Change `.toolconfig.pkl`, not those files, and write them
+again with `mise run generate`.
 
 The minimum supported Rust version is 1.87. Check it with:
 
