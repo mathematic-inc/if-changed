@@ -1,4 +1,4 @@
-#![warn(rust_2018_idioms)]
+//! Tests of the output of the `if-changed` command.
 
 use std::process::Command;
 

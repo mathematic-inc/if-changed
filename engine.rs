@@ -10,6 +10,15 @@ pub use git::GitEngine;
 
 use super::parser::Parser;
 
+fn not_modified_message(dependent: &Path, path: &Path, line: usize) -> String {
+    format!(
+        "Expected \"{}\" to be modified because of \"then-change\" in \"{}\" at line {line}.",
+        dependent.display(),
+        path.display()
+    )
+}
+
+/// A source of changed files, such as a Git repository, that `if-changed` checks.
 pub trait Engine {
     /// Iterate over changed files that match the given patterns and patterns that don't match any file.
     ///
@@ -23,6 +32,10 @@ pub trait Engine {
     fn resolve(&self, path: impl AsRef<Path>) -> PathBuf;
 
     /// Read the file content that should be checked.
+    ///
+    /// # Errors
+    ///
+    /// Returns the error of reading the file.
     fn read_to_string(&self, path: impl AsRef<Path>) -> Result<String, io::Error> {
         fs::read_to_string(self.resolve(path))
     }
@@ -34,11 +47,21 @@ pub trait Engine {
     fn is_range_modified(&self, path: impl AsRef<Path>, range: (usize, usize)) -> bool;
 
     /// Check a file for dependent changes.
+    ///
+    /// # Errors
+    ///
+    /// Returns a message for each dependent file that has no change, and for each comment that
+    /// the parser cannot read.
     fn check(&self, path: impl AsRef<Path>) -> Result<(), Vec<String>> {
         let path = path.as_ref();
         let parser = match self.read_to_string(path) {
-            Ok(source) => Parser::from_source(path, source),
-            Err(error) => return Err(vec![format!("Could not open {path:?}: {error}")]),
+            Ok(source) => Parser::from_source(path, &source),
+            Err(error) => {
+                return Err(vec![format!(
+                    "Could not open \"{}\": {error}",
+                    path.display()
+                )])
+            }
         };
 
         let mut errors = Vec::new();
@@ -80,11 +103,12 @@ pub trait Engine {
                 named_patterns.insert(&*pattern.value, (&**name, pattern.line));
             }
 
-            for pattern in self.matches(unnamed_patterns.keys()).flat_map(Result::err) {
+            for pattern in self
+                .matches(unnamed_patterns.keys())
+                .filter_map(Result::err)
+            {
                 let line = unnamed_patterns.get(&*pattern).unwrap();
-                errors.push(format!(
-                    "Expected {pattern:?} to be modified because of \"then-change\" in {path:?} at line {line}."
-                ));
+                errors.push(not_modified_message(&pattern, path, *line));
             }
 
             for (pattern, (name, line)) in named_patterns {
@@ -92,19 +116,19 @@ pub trait Engine {
                     let dependent = match result {
                         Ok(path) => path,
                         Err(pattern) => {
-                            errors.push(format!(
-                                "Expected {pattern:?} to be modified because of \"then-change\" in {path:?} at line {line}."
-                            ));
+                            errors.push(not_modified_message(&pattern, path, line));
                             continue;
                         }
                     };
 
                     // Try to open the file in search of the named block.
                     let mut parser = match self.read_to_string(&dependent) {
-                        Ok(source) => Parser::from_source(&dependent, source),
+                        Ok(source) => Parser::from_source(&dependent, &source),
                         Err(error) => {
                             errors.push(format!(
-                                "Could not open {dependent:?} for \"then-change\" in {path:?} at line {line}: {error:?}"
+                                "Could not open \"{}\" for \"then-change\" in \"{}\" at line {line}: {error:?}",
+                                dependent.display(),
+                                path.display()
                             ));
                             continue;
                         }
@@ -117,7 +141,9 @@ pub trait Engine {
                         _ => None,
                     }) else {
                         errors.push(format!(
-                            "Could not find \"if-changed\" with name \"{name}\" in {dependent:?} for \"then-change\" in {path:?} at line {line}."
+                            "Could not find \"if-changed\" with name \"{name}\" in \"{}\" for \"then-change\" in \"{}\" at line {line}.",
+                            dependent.display(),
+                            path.display()
                         ));
                         continue;
                     };
@@ -125,9 +151,7 @@ pub trait Engine {
                     match block {
                         Ok(block) => {
                             if !self.is_range_modified(&dependent, block.range) {
-                                errors.push(format!(
-                                    "Expected {dependent:?} to be modified because of \"then-change\" in {path:?} at line {line}."
-                                ));
+                                errors.push(not_modified_message(&dependent, path, line));
                             }
                         }
                         Err(error) => errors.extend(error),

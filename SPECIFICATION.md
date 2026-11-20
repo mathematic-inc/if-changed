@@ -1,6 +1,7 @@
 # `if-changed` Specification
 
-This document defines the syntax of `if-changed` in ABNF in accordance with [RFC5234](https://datatracker.ietf.org/doc/html/rfc5234):
+This document defines the syntax of `if-changed` in ABNF in accordance with
+[RFC5234](https://datatracker.ietf.org/doc/html/rfc5234):
 
 ```abnf
 if-changed = "if-changed" ["(" <name> ")"]

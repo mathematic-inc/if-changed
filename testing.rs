@@ -1,3 +1,7 @@
+/// Create a temporary Git repository and return it with its directory.
+///
+/// Each `"message": [path => content, ...]` entry commits the files with that message. A
+/// `staged` entry stages files, and a `working` entry writes files to the working tree.
 #[macro_export]
 macro_rules! git_test {
     ($($name:literal: [$($path:literal => $content:expr),*])* $(staged: [$($spath:literal => $scontent:expr),*])? $(working: [$($wdpath:literal => $wdcontent:expr),*])?) => {{

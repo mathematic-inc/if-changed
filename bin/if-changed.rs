@@ -1,3 +1,5 @@
+//! The `if-changed` command.
+
 #![cfg_attr(coverage_nightly, feature(coverage_attribute))]
 
 use std::process::ExitCode;
@@ -8,7 +10,7 @@ use if_changed::{Engine as _, GitEngine};
 
 #[derive(ClapParser, Debug)]
 #[command(author, version, about, long_about = None)]
-pub struct Cli {
+struct Cli {
     /// The revision to compare against. By default, HEAD is used.
     #[arg(long, env = "PRE_COMMIT_FROM_REF")]
     pub from_ref: Option<String>,
