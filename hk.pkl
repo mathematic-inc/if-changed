@@ -6,8 +6,6 @@ steps {
     check = "cargo metadata --locked --format-version 1 --all-features > /dev/null"
     profiles = List("slow")
   }
-  // The step of the organization sets `workspace_indicator = null`, so `{{workspace}}` has no value.
-  ["cargo-deny"] { dir = "{{root}}" }
   // The oxfmt binary of mise has no `--stdin-filepath`, which its builtin diff and fix use.
   ["oxfmt"] {
     check_diff = null
