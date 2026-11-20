@@ -206,8 +206,6 @@ impl Parser {
                 self.line.map(|line| &line[index + 1..]);
                 continue;
             }
-            // If a continuation is not found, then detect either a
-            // comma, ending parenthesis, or EOL.
             let (index, len) = match self.line.find(',') {
                 Some(index) => (index, 1),
                 None => match self.line.find(')') {
