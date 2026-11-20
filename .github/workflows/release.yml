@@ -6,43 +6,44 @@ on:
       - v*
 
 concurrency:
-  group: release-${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: false
 
-permissions:
-  contents: read
+permissions: {}
 
 jobs:
-  build-artifacts:
-    name: Build and Test
+  build-and-test:
+    name: Build and test
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:
       contents: read
     steps:
-      - name: Checkout
+      - name: Check out repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - name: Install Rust toolchain
+      - name: Install Rust
         uses: dtolnay/rust-toolchain@b725eda525362e7cf34af9a7243cac1e3f01a7ec # stable
         with:
           toolchain: stable
-      - name: Build
+      - name: Build workspace
         run: cargo build --locked
-      - name: Test
+      - name: Run tests
         run: cargo test --locked
 
   prebuilt:
+    name: Prebuilt
+    needs:
+      - build-and-test
     permissions:
       contents: read
-    needs: build-artifacts
     uses: $/.github/workflows/prebuilt.yml
 
-  create-release:
-    name: Publish GitHub Release
+  create-github-release:
+    name: Create GitHub release
     needs:
-      - build-artifacts
+      - build-and-test
       - prebuilt
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -52,7 +53,7 @@ jobs:
       id-token: write
       attestations: write
     steps:
-      - name: Checkout
+      - name: Check out repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
@@ -82,10 +83,10 @@ jobs:
           fi
           gh release create "$TAG" dist/* --verify-tag --title "$TAG" --generate-notes "${flags[@]}"
 
-  publish-crate:
+  publish-to-crates-io:
     name: Publish to crates.io
     needs:
-      - create-release
+      - create-github-release
     runs-on: ubuntu-latest
     timeout-minutes: 20
     environment: release
@@ -93,27 +94,28 @@ jobs:
       contents: read
       id-token: write
     steps:
-      - name: Checkout
+      - name: Check out repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - name: Install Rust toolchain
+      - name: Install Rust
         uses: dtolnay/rust-toolchain@b725eda525362e7cf34af9a7243cac1e3f01a7ec # stable
         with:
           toolchain: stable
       - name: Authenticate with crates.io
         uses: rust-lang/crates-io-auth-action@3268eb413133e2960fa4ae0e963ca76380c54cd9 # v1.0.6
         id: crates-io-auth
-      - name: Publish
+      - name: Publish crate
         run: cargo publish --locked
         env:
           CARGO_REGISTRY_TOKEN: ${{ steps.crates-io-auth.outputs.token }}
 
   verify-install:
+    name: Verify install
+    needs:
+      - publish-to-crates-io
     permissions:
       contents: read
-    name: Verify published installations
-    needs: [publish-crate]
     uses: $/.github/workflows/prebuilt.yml
     with:
       verify-install: true
