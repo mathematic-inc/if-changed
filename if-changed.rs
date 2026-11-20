@@ -1,6 +1,10 @@
+//! Check that the files of a repository change together. A block that follows an
+//! `if-changed` comment needs a change in each file that its `then-change` comment names.
+
 mod engine;
 mod parser;
 
+/// Helpers for tests.
 pub mod testing;
 
 use std::path::PathBuf;

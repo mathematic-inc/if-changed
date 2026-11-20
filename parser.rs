@@ -17,8 +17,8 @@ struct StringRef {
 }
 
 impl StringRef {
-    fn new(owner: String) -> StringRef {
-        StringRef {
+    const fn new(owner: String) -> Self {
+        Self {
             reference: owner.as_str(),
             owner,
         }
@@ -49,8 +49,8 @@ struct NumberedLine {
 }
 
 impl NumberedLine {
-    fn new(number: usize, line: String) -> NumberedLine {
-        NumberedLine {
+    const fn new(number: usize, line: String) -> Self {
+        Self {
             number,
             value: StringRef::new(line),
         }
@@ -81,8 +81,8 @@ pub(super) struct Parser {
 }
 
 impl Parser {
-    pub(super) fn from_source(relpath: impl AsRef<Path>, source: String) -> Parser {
-        Parser {
+    pub(super) fn from_source(relpath: impl AsRef<Path>, source: &str) -> Self {
+        Self {
             path: relpath.as_ref().to_owned(),
             lines: source
                 .lines()
@@ -94,13 +94,13 @@ impl Parser {
         }
     }
 
-    fn next_line(&mut self) -> Result<bool, Vec<String>> {
+    fn next_line(&mut self) -> bool {
         match self.lines.next() {
             Some(line) => {
                 self.line = NumberedLine::new(self.line.number + 1, line);
-                Ok(true)
+                true
             }
-            None => Ok(false),
+            None => false,
         }
     }
 
@@ -121,34 +121,33 @@ impl Parser {
 
     fn find_and_eat(&mut self, value: &str) -> bool {
         self.line
-            .try_map(|line| match line.find(value) {
-                Some(index) => Some(&line[index + value.len()..]),
-                None => None,
-            })
+            .try_map(|line| line.find(value).map(|index| &line[index + value.len()..]))
             .is_some()
     }
 
-    fn parse_if_changed(&mut self) -> Result<Option<Option<String>>, Vec<String>> {
+    fn parse_if_changed(&mut self) -> Result<Option<IfChangedBlock>, Vec<String>> {
         self.skip_comments();
-        Ok(if self.skip_whitespaces_and_eat("if-changed") {
-            Some(self.parse_if_changed_name()?)
-        } else {
-            None
-        })
+        if !self.skip_whitespaces_and_eat("if-changed") {
+            return Ok(None);
+        }
+        let name = self.parse_if_changed_name()?;
+        Ok(Some(IfChangedBlock {
+            name,
+            range: (self.line.number, 0),
+            patterns: Vec::new(),
+        }))
     }
 
     fn parse_if_changed_name(&mut self) -> Result<Option<String>, Vec<String>> {
         if !self.skip_whitespaces_and_eat("(") {
             return Ok(None);
         }
-        let end = match self.line.find(')') {
-            Some(end) => end,
-            None => {
-                return Err(vec![format!(
-                    "Could not find ')' for \"if-changed\" at line {} for {:?}.",
-                    self.line.number, self.path
-                )])
-            }
+        let Some(end) = self.line.find(')') else {
+            return Err(vec![format!(
+                "Could not find ')' for \"if-changed\" at line {} for \"{}\".",
+                self.line.number,
+                self.path.display()
+            )]);
         };
         let id = self.line[..end].trim().to_string();
         self.line.map(|line| &line[end + 1..]);
@@ -173,8 +172,8 @@ impl Parser {
         let then_change_line = self.line.number;
         if !self.skip_whitespaces_and_eat("(") {
             return Err(vec![format!(
-                "Could not find '(' for \"then-change\" at line {then_change_line} for {:?}.",
-                self.path
+                "Could not find '(' for \"then-change\" at line {then_change_line} for \"{}\".",
+                self.path.display()
             )]);
         }
 
@@ -189,10 +188,10 @@ impl Parser {
                 self.skip_whitespaces();
                 self.line.is_empty()
             } {
-                if !self.next_line()? {
+                if !self.next_line() {
                     return Err(vec![format!(
-                        "Could not find ')' for \"then-change\" at line {then_change_line} for {:?}.",
-                        self.path
+                        "Could not find ')' for \"then-change\" at line {then_change_line} for \"{}\".",
+                        self.path.display()
                     )]);
                 }
                 self.skip_comments();
@@ -202,48 +201,43 @@ impl Parser {
             if pattern_line == 0 {
                 pattern_line = self.line.number;
             }
-            match self.line.find('\\') {
-                Some(index) => {
-                    pattern_buffer.push_str(self.line[..index].trim());
-                    self.line.map(|line| &line[index + 1..]);
-                    continue;
-                }
-                None => {
-                    // If a continuation is not found, then detect either a
-                    // comma, ending parenthesis, or EOL.
-                    let (index, len) = match self.line.find(',') {
-                        Some(index) => (index, 1),
-                        None => match self.line.find(')') {
-                            Some(index) => {
-                                right_paren_found = true;
-                                (index, 1)
-                            }
-                            None => (self.line.len(), 0),
-                        },
-                    };
-                    pattern_buffer.push_str(self.line[..index].trim());
-                    self.line.map(|line| &line[index + len..]);
-                }
+            if let Some(index) = self.line.find('\\') {
+                pattern_buffer.push_str(self.line[..index].trim());
+                self.line.map(|line| &line[index + 1..]);
+                continue;
             }
+            // If a continuation is not found, then detect either a
+            // comma, ending parenthesis, or EOL.
+            let (index, len) = match self.line.find(',') {
+                Some(index) => (index, 1),
+                None => match self.line.find(')') {
+                    Some(index) => {
+                        right_paren_found = true;
+                        (index, 1)
+                    }
+                    None => (self.line.len(), 0),
+                },
+            };
+            pattern_buffer.push_str(self.line[..index].trim());
+            self.line.map(|line| &line[index + len..]);
 
-            let (pattern, name) = match pattern_buffer.split_once(':') {
+            let (pattern, name) = if let Some((pattern, name)) = pattern_buffer.split_once(':') {
                 // If the related path has the form "foo:bar", then
                 // `pattern` will be "foo" and `name` will be "bar".
-                Some((pattern, name)) => (pattern.trim().to_owned(), Some(name.trim().to_owned())),
+                (pattern.trim().to_owned(), Some(name.trim().to_owned()))
+            } else {
                 // Otherwise, `name` is none and the related path is
                 // `pattern_buffer` itself.
-                None => {
-                    if pattern_buffer.is_empty() {
-                        if right_paren_found {
-                            break;
-                        }
-                        return Err(vec![format!(
-                            "Unexpected empty path at line {pattern_line} for \"then-change\" at line {then_change_line} for {:?}.",
-                            self.path
-                        )]);
+                if pattern_buffer.is_empty() {
+                    if right_paren_found {
+                        break;
                     }
-                    (pattern_buffer.clone(), None)
+                    return Err(vec![format!(
+                        "Unexpected empty path at line {pattern_line} for \"then-change\" at line {then_change_line} for \"{}\".",
+                        self.path.display()
+                    )]);
                 }
+                (pattern_buffer.clone(), None)
             };
 
             related_paths.push(Pattern {
@@ -266,19 +260,11 @@ impl Iterator for Parser {
     type Item = Result<IfChangedBlock, Vec<String>>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        while match self.next_line() {
-            Ok(value) => value,
-            Err(error) => return Some(Err(error)),
-        } {
-            if let Some(name) = match self.parse_if_changed() {
-                Ok(name) => name,
+        while self.next_line() {
+            match self.parse_if_changed() {
+                Ok(Some(block)) => self.blocks.push(block),
+                Ok(None) => {}
                 Err(error) => return Some(Err(error)),
-            } {
-                self.blocks.push(IfChangedBlock {
-                    name,
-                    range: (self.line.number, 0),
-                    patterns: Vec::new(),
-                });
             }
 
             if let Some((paths, end)) = match self.parse_then_change() {
@@ -287,22 +273,21 @@ impl Iterator for Parser {
                     let mut errors = Vec::new();
                     if self.blocks.pop().is_none() {
                         errors.push(format!(
-                            "Missing \"if-changed\" for \"then-change\" at line {} for {:?}.",
-                            self.line.number, self.path
+                            "Missing \"if-changed\" for \"then-change\" at line {} for \"{}\".",
+                            self.line.number,
+                            self.path.display()
                         ));
                     }
                     errors.extend(error);
                     return Some(Err(errors));
                 }
             } {
-                let mut block = match self.blocks.pop() {
-                    Some(block) => block,
-                    None => {
-                        return Some(Err(vec![format!(
-                            "Missing \"if-changed\" for \"then-change\" at line {} for {:?}.",
-                            end, self.path
-                        )]))
-                    }
+                let Some(mut block) = self.blocks.pop() else {
+                    return Some(Err(vec![format!(
+                        "Missing \"if-changed\" for \"then-change\" at line {} for \"{}\".",
+                        end,
+                        self.path.display()
+                    )]));
                 };
 
                 block.range.1 = end;
@@ -320,8 +305,9 @@ impl Iterator for Parser {
             .filter(|block| block.range.1 == 0)
             .map(|block| {
                 format!(
-                    "Missing \"then-changed\" for \"if-changed\" at line {} for {:?}.",
-                    block.range.0, self.path
+                    "Missing \"then-changed\" for \"if-changed\" at line {} for \"{}\".",
+                    block.range.0,
+                    self.path.display()
                 )
             })
             .collect()))
@@ -338,7 +324,7 @@ mod tests {
             fn $name() {
                 insta::assert_compact_json_snapshot!(Parser::from_source(
                     stringify!($name),
-                    format!("{}\n", $value),
+                    &format!("{}\n", $value),
                 )
                 .collect::<Result<Vec<_>, _>>(), @$exp);
             }

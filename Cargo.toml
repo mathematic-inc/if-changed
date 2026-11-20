@@ -40,3 +40,15 @@ indoc = "2.0.8"
 insta = { version = "1.49.0", features = ["json"] }
 serde = { version = "1.0.229", features = ["derive"] }
 tempfile = "3.27.0"
+
+[lints.clippy]
+all = { level = "deny", priority = -1 }
+nursery = { level = "deny", priority = -1 }
+pedantic = { level = "deny", priority = -1 }
+redundant_pub_crate = "allow"
+
+[lints.rust]
+missing_debug_implementations = "deny"
+missing_docs = "deny"
+rust_2018_idioms = { level = "deny", priority = -1 }
+unreachable_pub = "deny"

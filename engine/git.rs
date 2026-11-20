@@ -1,6 +1,6 @@
 use std::{
     borrow::{BorrowMut, Cow},
-    fs, io,
+    fmt, fs, io,
     path::{Path, PathBuf, MAIN_SEPARATOR_STR},
     str::FromStr as _,
 };
@@ -12,7 +12,7 @@ use super::Engine;
 
 const IF_CHANGED_IGNORE_TRAILER: &[u8] = b"ignore-if-changed";
 
-fn changed_path(delta: git2::DiffDelta<'_>) -> Option<PathBuf> {
+fn changed_path(delta: &git2::DiffDelta<'_>) -> Option<PathBuf> {
     match delta.status() {
         git2::Delta::Deleted => delta.old_file().path(),
         _ => delta.new_file().path(),
@@ -20,6 +20,7 @@ fn changed_path(delta: git2::DiffDelta<'_>) -> Option<PathBuf> {
     .map(Path::to_owned)
 }
 
+/// An [`Engine`] that finds changes with Git.
 pub struct GitEngine<'repo> {
     ignore_pathspec: Option<git2::Pathspec>,
     repository: &'repo git2::Repository,
@@ -27,8 +28,26 @@ pub struct GitEngine<'repo> {
     to_tree: Option<git2::Tree<'repo>>,
 }
 
+impl fmt::Debug for GitEngine<'_> {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        formatter
+            .debug_struct("GitEngine")
+            .field("repository", &self.repository.path())
+            .finish_non_exhaustive()
+    }
+}
+
 impl<'repo> GitEngine<'repo> {
+    /// Create an engine that compares `from_ref` with `to_ref`. Without `from_ref`, the
+    /// engine compares the parent of `to_ref`, or `HEAD`. Without `to_ref`, the engine
+    /// compares the working tree.
+    ///
+    /// # Panics
+    ///
+    /// Panics when a revision is not valid, when `HEAD` has no tree, or when the repository
+    /// is bare.
     #[allow(clippy::new_ret_no_self)]
+    #[must_use]
     pub fn new(
         repository: &'repo git2::Repository,
         from_ref: Option<&str>,
@@ -170,7 +189,7 @@ impl Engine for GitEngine<'_> {
         gen!({
             if patterns.is_empty() {
                 for delta in diff.deltas() {
-                    if let Some(path) = changed_path(delta) {
+                    if let Some(path) = changed_path(&delta) {
                         yield_!(Ok(path))
                     }
                 }
@@ -182,7 +201,7 @@ impl Engine for GitEngine<'_> {
                 .match_diff(&diff, git2::PathspecFlags::FIND_FAILURES)
                 .expect("bare repos are not supported");
             for delta in matches.diff_entries() {
-                if let Some(path) = changed_path(delta) {
+                if let Some(path) = changed_path(&delta) {
                     yield_!(Ok(path))
                 }
             }
@@ -219,16 +238,16 @@ impl Engine for GitEngine<'_> {
     }
 
     fn is_range_modified(&self, path: impl AsRef<Path>, range: (usize, usize)) -> bool {
-        let Some(patch) = self.patch(path.as_ref()) else {
+        let Some(file_patch) = self.patch(path.as_ref()) else {
             return false;
         };
         // Special case for untracked files. They are always considered modified.
-        if patch.delta().status() == git2::Delta::Untracked {
+        if file_patch.delta().status() == git2::Delta::Untracked {
             return true;
         }
-        for hunk_index in 0..patch.num_hunks() {
-            for line in (0..patch.num_lines_in_hunk(hunk_index).unwrap())
-                .map(|i| patch.line_in_hunk(hunk_index, i).unwrap())
+        for hunk_index in 0..file_patch.num_hunks() {
+            for line in (0..file_patch.num_lines_in_hunk(hunk_index).unwrap())
+                .map(|i| file_patch.line_in_hunk(hunk_index, i).unwrap())
             {
                 match line.origin() {
                     '+' if {
@@ -245,9 +264,7 @@ impl Engine for GitEngine<'_> {
                     {
                         return true;
                     }
-                    _ => {
-                        continue;
-                    }
+                    _ => {}
                 }
             }
         }
