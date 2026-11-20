@@ -5,7 +5,9 @@
 [![ci](https://img.shields.io/github/actions/workflow/status/mathematic-inc/if-changed/ci.yml?label=ci&style=flat-square)](https://github.com/mathematic-inc/if-changed/actions/workflows/ci.yml)
 [![docs](https://img.shields.io/docsrs/if-changed?style=flat-square)](https://docs.rs/if-changed/latest/if_changed/index.html)
 
-`if-changed` is a command-line utility that checks for `"if-changed"` and `"then-change"` comments in a repository diff and errors if dependent files need changes.
+`if-changed` is a command-line utility that checks for `"if-changed"` and
+`"then-change"` comments in a repository diff and errors if dependent files need
+changes.
 
 ## Prebuilt installation
 
@@ -23,9 +25,9 @@ Or declare the GitHub release directly in `mise.toml`:
 "github:mathematic-inc/if-changed" = "latest"
 ```
 
-Run `mise install` to download and activate the executable. No custom mise plugin
-is required. The Cargo backend (`cargo:if-changed`) also supports these releases;
-set `cargo.binstall_only = true` to reject source compilation.
+Run `mise install` to download and activate the executable. No custom mise
+plugin is required. The Cargo backend (`cargo:if-changed`) also supports these
+releases; set `cargo.binstall_only = true` to reject source compilation.
 
 | Platform | Architectures | Archive |
 | --- | --- | --- |
@@ -34,10 +36,11 @@ set `cargo.binstall_only = true` to reject source compilation.
 | Linux musl | x64, ARM64 | `.tar.gz` |
 | Windows MSVC | x64, ARM64 | `.zip` |
 
-Every archive includes SHA-256 checksums and GitHub build provenance. CI builds all
-eight targets and runs the extracted executables on the matching architecture.
-After publication, the release workflow installs through cargo-binstall and mise
-and runs both installations. A missing prebuilt binary fails the release checks.
+Every archive includes SHA-256 checksums and GitHub build provenance. CI builds
+all eight targets and runs the extracted executables on the matching
+architecture. After publication, the release workflow installs through
+cargo-binstall and mise and runs both installations. A missing prebuilt binary
+fails the release checks.
 
 ## Installation
 
@@ -46,6 +49,9 @@ cargo install if-changed
 ```
 
 ## Usage
+
+<!-- rumdl-disable MD013 -->
+<!-- The usage block is the output of `if-changed --help`. -->
 
 ```bash
 Usage: if-changed [OPTIONS] [PATTERNS]...
@@ -74,7 +80,10 @@ Options:
           Print version
 ```
 
-To use with [`pre-commit`](https://pre-commit.com), add the following to your `.pre-commit-config.yaml`:
+<!-- rumdl-enable MD013 -->
+
+To use with [`pre-commit`](https://pre-commit.com), add the following to your
+`.pre-commit-config.yaml`:
 
 ```yaml
 repos:
@@ -106,7 +115,11 @@ const enum ErrorCode {
 }
 ```
 
-Typically, to synchronize these enums, a common approach is to extract the enum values into a "source-of-truth" file. This often requires significant effort to generate the enums using the build system or a script, and to ensure everything works correctly. If the job is a one-off, the costs heavily outweigh the benefits.
+Typically, to synchronize these enums, a common approach is to extract the enum
+values into a "source-of-truth" file. This often requires significant effort to
+generate the enums using the build system or a script, and to ensure everything
+works correctly. If the job is a one-off, the costs heavily outweigh the
+benefits.
 
 This is where `if-changed` comes in. Instead of the above, suppose we have:
 
@@ -132,11 +145,15 @@ This is where `if-changed` comes in. Instead of the above, suppose we have:
 +// then-change(lib.rs:ecrs)
 ```
 
-Once this is committed, the next time `lib.rs` (or `lib.ts`) is changed in the lines surrounded by `"if-changed"` and `"then-change"`, `if-changed` will error if the other file (referenced in the `"then-change"` comment) does not have any changes in the corresponding named block.
+Once this is committed, the next time `lib.rs` (or `lib.ts`) is changed in the
+lines surrounded by `"if-changed"` and `"then-change"`, `if-changed` will error
+if the other file (referenced in the `"then-change"` comment) does not have any
+changes in the corresponding named block.
 
 > [!TIP]
 >
-> If you just want to assert that any change in a file is okay, then just reference the file without the name. For example,
+> If you just want to assert that any change in a file is okay, then just
+> reference the file without the name. For example,
 >
 > ```diff
 >  // lib.ts
@@ -152,7 +169,8 @@ Once this is committed, the next time `lib.rs` (or `lib.ts`) is changed in the l
 
 ### File lists
 
-If a block needs to specify several files, you can use commas and/or newlines to separate paths/patterns. For example,
+If a block needs to specify several files, you can use commas and/or newlines to
+separate paths/patterns. For example,
 
 ```c
 // then-change(foo/bar, baz)
@@ -165,11 +183,17 @@ If a block needs to specify several files, you can use commas and/or newlines to
 // )
 ```
 
-These lists follow the same rules as [`.gitignore`](https://git-scm.com/docs/gitignore), with the exception that relative paths/patterns are always matched against the file in which they are written, even if the paths/patterns don't contain `/`. Use a starting `/` to match the pattern against the repository root, e.g. `/*/bar`.
+These lists follow the same rules as
+[`.gitignore`](https://git-scm.com/docs/gitignore), with the exception that
+relative paths/patterns are always matched against the file in which they are
+written, even if the paths/patterns don't contain `/`. Use a starting `/` to
+match the pattern against the repository root, e.g. `/*/bar`.
 
 ### Long paths
 
-If a path is too long, you can use a shell continuation `\` to split it across multiple lines. For example, for the path `this/is/a/really/long/path/to/some/very/far/away/file`, you can do
+If a path is too long, you can use a shell continuation `\` to split it across
+multiple lines. For example, for the path
+`this/is/a/really/long/path/to/some/very/far/away/file`, you can do
 
 ```c
 // then-change(
@@ -180,11 +204,15 @@ If a path is too long, you can use a shell continuation `\` to split it across m
 
 ### Disabling `if-changed`
 
-To disable `if-changed` for a specific file during a commit, add `Ignore-if-changed: <path>, ... -- [REASON]` to the commit footer. Here, `<path>` names the file. In general, `<path>` can be any pattern allowed by [fnmatch](https://man7.org/linux/man-pages/man3/fnmatch.3.html).
+To disable `if-changed` for a specific file during a commit, add
+`Ignore-if-changed: <path>, ... -- [REASON]` to the commit footer. Here,
+`<path>` names the file. In general, `<path>` can be any pattern allowed by
+[fnmatch](https://man7.org/linux/man-pages/man3/fnmatch.3.html).
 
 > [!NOTE]
 >
-> If you want to disable `if-changed` when diffing the working tree, you can execute `if-changed` with the following:
+> If you want to disable `if-changed` when diffing the working tree, you can
+> execute `if-changed` with the following:
 >
 > ```bash
 > if-changed '*' !<path-or-pattern>
@@ -194,12 +222,22 @@ To disable `if-changed` for a specific file during a commit, add `Ignore-if-chan
 
 ## Contributing
 
-AI agents handle most maintenance and implementation for this repository. For us, reviewing an unsolicited pull request takes longer than implementing a proposal after we have agreed on it.
+AI agents handle most maintenance and implementation for this repository. For
+us, reviewing an unsolicited pull request takes longer than implementing a
+proposal after we have agreed on it.
 
-[Start a Discussion](https://github.com/mathematic-inc/if-changed/discussions/new) and wait for a maintainer to review the proposal before doing implementation work. If we accept it, a Mathematic maintainer or agent will open the pull request. GitHub restricts pull request creation to Mathematic maintainers and repository collaborators who have write, maintain, or admin access, plus authorized maintenance agents.
+[Start a Discussion](https://github.com/mathematic-inc/if-changed/discussions/new)
+and wait for a maintainer to review the proposal before doing implementation
+work. If we accept it, a Mathematic maintainer or agent will open the pull
+request. GitHub restricts pull request creation to Mathematic maintainers and
+repository collaborators who have write, maintain, or admin access, plus
+authorized maintenance agents.
 
-When Mathematic implements a proposal, we will link the implementation pull request to the Discussion and credit the original author.
+When Mathematic implements a proposal, we will link the implementation pull
+request to the Discussion and credit the original author.
 
 Read [CONTRIBUTING.md](CONTRIBUTING.md) for the full policy.
 
-> This project is free and open-source work by a 501(c)(3) non-profit. If you find it useful, please consider [donating](https://github.com/sponsors/mathematic-inc).
+> This project is free and open-source work by a 501(c)(3) non-profit. If you
+> find it useful, please consider
+> [donating](https://github.com/sponsors/mathematic-inc).
